@@ -57,8 +57,8 @@ const DEFAULT_DATA={
  ],
  sections:[
   {id:"section_a",name:"A区",description:"",books:[
-   {id:"book_tide",name:"潮声备忘录",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
-    {text:"第一页：海风从很远的地方吹来。",image:"",caption:""},
+   {id:"book_tide",name:"书",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
+    {text:"第一页：只是书",image:"",caption:""},
     {text:"第二页：这里以后可以放真正的故事。",image:"",caption:""}
    ]},
    {id:"book_fox",name:"只给狐狸的册页",description:"",visibleTo:["fox","lighthouse_jellyfish"],pages:[
@@ -180,7 +180,7 @@ function showSection(sec){
  const books=visibleBooks(sec);
  books.forEach((b,i)=>s+="["+(i+1)+"] "+b.name+(b.description?" — "+b.description:"")+"\n");
  if(!books.length)s+="这里暂时没有你能看到的书目。\n";
- s+="\n[B] 返回图书馆";
+ s+="\n[0] 返回图书馆";
  show(s,books.map((b,i)=>[(i+1)+". "+b.name,String(i+1)]));
 }
 function openBook(b){book=b;page=0;showBookPage()}
@@ -203,7 +203,7 @@ function adminHome(){
  state="admin";
  show("================================\n        灯塔水母 · 编辑室\n================================\n\n"+
  "这里是五彩滩图书馆的内容管理区域。\n\n"+
- "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[B] 返回图书馆\n\n>",
+ "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[0] 返回图书馆\n\n>",
  [["主页","1"],["剧情","2"],["通行证","3"],["分区","4"],["书目","5"],["书页","6"],["权限","7"],["数据","8"]]);
 }
 function adminHomeChoice(x){
@@ -224,7 +224,7 @@ function adminHomepage(){
  let s="========== 图书馆主页 ==========\n\n";
  s+="网站名称："+DATA.title+"\n\n";
  DATA.homeLines.forEach((x,i)=>s+="["+i+"] "+x+"\n");
- s+="\n修改名称：title=新名称\n修改文字：line=编号=新文字\n新增文字：add=新文字\n删除文字：del=编号\n\n[B] 返回";
+ s+="\n修改名称：title=新名称\n修改文字：line=编号=新文字\n新增文字：add=新文字\n删除文字：del=编号\n\n[0] 返回";
  show(s);
 }
 function adminHomepageChoice(x){
@@ -245,7 +245,7 @@ function adminStory(){
   (n.choices||[]).forEach((c,i)=>s+="   → "+(i+1)+". "+c.label+" → "+c.to+"\n");
  });
  s+="\n编辑节点：edit=id|说话者|内容\n新增节点：add=id|说话者|内容\n删除节点：del=id\n新增分支：choice=id|选项文字|目标节点ID\n删除分支：choice-del=id|编号\n查看结构：tree\n";
- s+="\n当前入口："+DATA.story.start+"\n修改入口：start=节点ID\n\n[B] 返回";
+ s+="\n当前入口："+DATA.story.start+"\n修改入口：start=节点ID\n\n[0] 返回";
  show(s);
 }
 function adminStoryChoice(x){
@@ -280,7 +280,7 @@ function adminPasses(){
  state="adminPass";
  let s="========== 通行证 ==========\n\n";
  DATA.passes.forEach((p,i)=>s+="["+i+"] "+p.name+" | 内部ID："+p.id+(p.admin?" | 管理员":"")+"\n");
- s+="\n修改：edit=编号|内部ID|验证编号|显示名称|admin(true/false)\n新增：add=内部ID|验证编号|显示名称|admin(true/false)\n删除：del=编号\n\n注意：内部ID与验证编号不会显示给普通访客。\n\n[B] 返回";
+ s+="\n修改：edit=编号|内部ID|验证编号|显示名称|admin(true/false)\n新增：add=内部ID|验证编号|显示名称|admin(true/false)\n删除：del=编号\n\n注意：内部ID与验证编号不会显示给普通访客。\n\n[0] 返回";
  show(s);
 }
 function adminPassChoice(x){
@@ -302,7 +302,7 @@ function adminSections(){
  state="adminSection";
  let s="========== 图书馆分区 ==========\n\n";
  DATA.sections.forEach((a,i)=>s+="["+i+"] "+a.name+" | "+a.books.length+" 本书\n");
- s+="\n修改：edit=编号|新名称|描述\n新增：add=内部ID|名称|描述\n删除：del=编号\n\n[B] 返回";
+ s+="\n修改：edit=编号|新名称|描述\n新增：add=内部ID|名称|描述\n删除：del=编号\n\n[0] 返回";
  show(s);
 }
 function adminSectionChoice(x){
@@ -323,7 +323,7 @@ function adminBooks(){
   s+="【"+si+"】"+sct.name+"\n";
   sct.books.forEach((b,bi)=>s+="  ["+si+"."+bi+"] "+b.name+" | ID:"+b.id+"\n");
  });
- s+="\n修改：edit=分区,书目|内部ID|书名|简介\n新增：add=分区|内部ID|书名|简介\n删除：del=分区,书目\n编辑页面：pages=分区,书目\n\n[B] 返回";
+ s+="\n修改：edit=分区,书目|内部ID|书名|简介\n新增：add=分区|内部ID|书名|简介\n删除：del=分区,书目\n编辑页面：pages=分区,书目\n\n[0] 返回";
  show(s);
 }
 function adminBookChoice(x){
