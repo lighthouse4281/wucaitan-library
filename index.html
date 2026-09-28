@@ -335,19 +335,32 @@ function adminBookChoice(x){
  adminBooks();
 }
 
-function adminPageSelect(){
+ function adminPageSelect(){
  state="adminPageSelect";
- let s="========== 书页与图片 ==========\n\n请选择要编辑的书目：\n\n";
+
+ let s="========== 书页与图片 ==========\n\n";
+ s+="请选择要编辑的书目：\n\n";
+
  let count=0;
+
  DATA.sections.forEach((sct,si)=>{
-  s+="【"+si+"】"+sct.name+"\n";
+  s+="【"+sct.name+"】\n";
+
   sct.books.forEach((b,bi)=>{
-   s+="["+count+"] "+b.name+"  ("+si+","+bi+")\n";
    count++;
+   s+="["+count+"] "+b.name+"\n";
   });
+
+  s+="\n";
  });
- if(count===0)s+="目前还没有书目。\n";
- s+="\n输入上面的编号进入书页编辑。\n[0] 返回编辑室";
+
+ if(count===0){
+  s+="目前还没有书目。\n";
+ }
+
+ s+="请输入书目编号。\n";
+ s+="[0] 返回编辑室";
+
  show(s);
 }
 function adminPages(){
@@ -359,21 +372,36 @@ function adminPages(){
  show(s);
 }
 
-function adminPageSelectChoice(x){
- if(x==="0"){adminHome();return}
- const target=Number(x);
- if(!Number.isInteger(target)||target<0){adminPageSelect();return}
+ function adminPageSelectChoice(x){
+ if(x==="0"){
+  adminHome();
+  return;
+ }
+
+ const target=Number(x)-1;
+
+ if(!Number.isInteger(target)||target<0){
+  adminPageSelect();
+  return;
+ }
+
  let count=0;
+
  for(let si=0;si<DATA.sections.length;si++){
   for(let bi=0;bi<DATA.sections[si].books.length;bi++){
+
    if(count===target){
     edit={si,bi};
     adminPages();
     return;
    }
+
    count++;
   }
  }
+
+ adminPageSelect();
+}
  adminPageSelect();
 }
 function adminPageChoice(x){
