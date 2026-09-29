@@ -29,7 +29,7 @@ header{padding:8px 0 16px;border-bottom:1px solid #39433d;margin-bottom:18px}
 <main>
 <header>
  <div class="brand" id="brand">五彩滩图书馆</div>
- <div class="status" id="status">现实入口 · 未确认身份</div>
+ <div class="status" id="status">从现实到图书馆的入口 · 未确认身份</div>
 </header>
 <pre id="out"></pre>
 <div class="controls">
@@ -46,23 +46,23 @@ const DEFAULT_DATA={
  title:"五彩滩图书馆",
  homeLines:[
   "海：欢迎",
-  "海：这里是五彩滩图书馆的现实入口",
-  "海：因为与现实链接，所以请原谅我使用现实式的身份确认方式"
+  "海：这里是五彩滩图书馆的一个入口",
+  "海：这是第一个与现实链接的入口，请原谅我使用无趣的身份确认方式"
  ],
  hint:["海：这里有一条给某人的提示：","海：狐狸的生日"],
  passes:[
   {id:"friend_jellyfish",code:"4281",name:"水母的朋友",admin:false},
   {id:"fox",code:"1212",name:"狐狸",admin:false},
-  {id:"lighthouse_jellyfish",code:"xin",name:"灯塔水母",admin:true}
+  {id:"lighthouse_jellyfish",code:"真心",name:"灯塔水母",admin:true}
  ],
  sections:[
   {id:"section_a",name:"A区",description:"",books:[
-   {id:"book_tide",shelf:"a_window",name:"潮声备忘录",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
-    {text:"第一页：海风从很远的地方吹来。",image:"",caption:""},
-    {text:"第二页：这里以后可以放真正的故事。",image:"",caption:""}
+   {id:"book_tide",shelf:"a_window",name:"所有故事的故事",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
+    {text:"第一页：所有故事的开始。",image:"",caption:""},
+    {text:"第二页：所有故事的结局。",image:"",caption:""}
    ]},
-   {id:"book_fox",shelf:"a_high",name:"只给狐狸的册页",description:"",visibleTo:["fox","lighthouse_jellyfish"],pages:[
-    {text:"这一页只对狐狸与灯塔水母开放。",image:"",caption:""}
+   {id:"book_fox",shelf:"a_high",name:"给狐狸",description:"",visibleTo:["fox","lighthouse_jellyfish"],pages:[
+    {text:"这一页只对狐狸开放。",image:"",caption:""}
    ]}
   ]},
   {id:"section_b",name:"B区",description:"",books:[
@@ -86,18 +86,18 @@ const DEFAULT_DATA={
   section_c:[],section_d:[]
  },
  shelfDialogues:{
-  default:["你站在书架前。","这里的书似乎没有按照什么明确的顺序排列。"],
-  fox:["你站在书架前。","这里似乎没有什么异常。","你决定仔细看看。"],
-  friend_jellyfish:["你站在书架前。","灰尘之间留下了一点不明显的痕迹。","你决定仔细看看。"],
-  lighthouse_jellyfish:["你站在书架前。","你知道这里曾经有人整理过。","但现在，它又恢复了原来的样子。"]
+  default:["站在书架前。"],
+  fox:["站在书架前。"],
+  friend_jellyfish:["站在书架前。"],
+  lighthouse_jellyfish:["站在书架前。"]
  },
  story:{
   start:"start",
   nodes:{
    start:{speaker:"海",text:"欢迎",choices:[{label:"继续",to:"reality"}]},
-   reality:{speaker:"海",text:"这里是五彩滩图书馆的现实入口。",choices:[{label:"继续",to:"identity"}]},
-   identity:{speaker:"海",text:"因为与现实链接，所以请原谅我使用现实式的身份确认方式。",choices:[
-    {label:"输入验证",to:"verify"},
+   reality:{speaker:"海",text:"这是五彩滩图书馆的一个入口。",choices:[{label:"继续",to:"identity"}]},
+   identity:{speaker:"海",text:"这是第一个与现实链接的入口，请原谅我使用无聊的身份确认方式。",choices:[
+    {label:"输入现实密文",to:"verify"},
     {label:"提示",to:"hint"}
    ]}
   }
@@ -148,12 +148,12 @@ cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submit
 function startStory(){
  state="entrance";setStatus();
  let s="----------图书馆入口-----------\n\n";
- s+="                              海\n\n";
- if(pass)s+="你已经留下过自己的通行证。\n\n";
+ s+="               海              \n\n";
+ if(pass)s+="已经拥有自己的通行证。\n\n";
  s+="[图书馆入口]\n[海]";
- if(pass)s+="\n[重新进行身份确认]";
+ if(pass)s+="\n[再次输入密文]";
  const bs=[["图书馆入口","libraryEnter"],["海","seaEnter"]];
- if(pass)bs.push(["重新进行身份确认","reverify"]);
+ if(pass)bs.push(["再次输入密文","reverify"]);
  show(s,bs);
 }
 function seaEnter(){
@@ -164,7 +164,7 @@ function libraryEnter(){
  if(!pass){startOriginalIntro();return}
  library();
 }
-function reverify(){state="verify";show("请输入现实数字：\n\n实际可以输入字母和数字。\n");}
+function reverify(){state="verify";show("请输入现实密文：\n\n以防你是个大人，这里可以输入字母和数字。\n");}
 function startOriginalIntro(){state="story";currentNode=DATA.story.start;showNode();}
 function showNode(){
  const n=DATA.story.nodes[currentNode];
@@ -189,25 +189,25 @@ function chooseNode(x){
 }
 function startIntroFallback(){
  state="intro";
- show(DATA.homeLines.join("\n")+"\n\n[1] 输入验证\n[2] 提示\n[r] 重置本地数据\n\n请输入：",[
+ show(DATA.homeLines.join("\n")+"\n\n[1] 输入现实密文\n[2] 提示\n[r] 重置本地数据\n\n请输入：",[
  ["1","1"],["2","2"]
  ]);
 }
 function seaDialogue(){
  state="seaMenu";
  let n=pass?.name||"未知的访客";
- show("海：请问有什么事吗？“"+n+"”\n\n[1] 这里是哪里？你是谁？\n[2] 我想听大人话\n[0] 再见",[["1","1"],["2","2"],["0","0"]]);
+ show("海：请问有什么事吗？“"+n+"”\n\n[1] 这里是哪里？你是谁？\n[2] 听大人话\n[0] 再见",[["1","1"],["2","2"],["0","0"]]);
 }
 function seaChoice(x){
  if(x==="0"){startStory();return}
  let id=pass?.id||"";
  let lines=[];
  if(x==="1"){
-  if(id==="fox") lines=["海：你好，大名鼎鼎的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"];
-  else lines=["海：这里是五彩滩图书馆","海：我是海，如你所见","海没有说更多"];
+  if(id==="fox") lines=["海：你好，尊敬的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"];
+  else lines=["海：这里是五彩滩图书馆","海：我是海，如你所见","海就这样站着"];
  }else if(x==="2"){
-  if(id==="friend_jellyfish") lines=["海说了一些奇怪的客套话"];
-  else if(id==="fox"||id==="lighthouse_jellyfish") lines=["海：很抱歉，但是我不能对你说这个"];
+  if(id==="friend_jellyfish") lines=["海说了一些数字之类"];
+  else if(id==="fox"||id==="lighthouse_jellyfish") lines=["海：请放心，我不会对你说那些话"];
   else lines=["海：……","海没有回答"];
  }
  survey.dialogLines=lines;survey.dialogIndex=0;state="seaDialog";showSeaLine();
@@ -215,16 +215,16 @@ function seaChoice(x){
 function showSeaLine(){
  const i=survey.dialogIndex, lines=survey.dialogLines;
  if(i>=lines.length){seaDialogue();return}
- show(lines[i],[[i<lines.length-1?"继续":"回到海这里","nextSea"]]);
+ show(lines[i],[[i<lines.length-1?"继续":"回到海","nextSea"]]);
 }
 function nextSea(){survey.dialogIndex++;showSeaLine()}
-function verify(){state="verify";show("请输入现实数字：\n\n实际可以输入字母和数字。\n");}
+function verify(){state="verify";show("请输入现实密文：\n\n如果你是大人，那么这句话的意思是请输入字母和数字。\n");}
 function hint(){state="hint";show(DATA.hint.join("\n")+"\n\n[回车] 返回");}
 function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
- if(!p){state="verifyFail";show("海：……\n\n这串编号没有对应的记录。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
+ if(!p){state="verifyFail";show("海：非常抱歉……\n\n这串密文没有效果。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
  pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
- show("海：你好，"+p.name+"。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+ show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
 function library(){
  state="library";setStatus();
@@ -256,11 +256,11 @@ function showSection(sec){
  if(shelves.length){
   shelves.forEach((sh,i)=>{s+="["+(i+1)+"] "+sh.name+"\n";const found=foundBooksForShelf(sh.id);found.forEach(b=>s+="    · "+b.name+"\n")});
  }else{
-  s+="这里还没有可以调查的书架。\n";
+  s+="这里的书架都是空的。\n";
  }
- s+="\n[B] 返回图书馆";
+ s+="\n[0] 返回图书馆";
  const bs=[];shelves.forEach((sh,i)=>{bs.push([(i+1)+". "+sh.name,"shelf:"+sh.id]);foundBooksForShelf(sh.id).forEach(b=>bs.push(["查看《"+b.name+"》","found:"+b.id]))});
- bs.push(["返回","B"]);
+ bs.push(["返回","0"]);
  show(s,bs);
 }
 function shelfById(id){return (DATA.shelves?.[section?.id]||[]).find(x=>x.id===id)}
@@ -289,7 +289,7 @@ function makePlaceholderPool(){
   {kind:"odd",name:"封面奇怪的书",lines:["你看不懂里面的内容。"],weight:2},
   {kind:"sealed",name:"崭新到未开封的书",lines:["因为没有开封，你不敢打开看。"],weight:2},
   {kind:"empty",name:"没有封面的书",lines:["里面是空的。"],weight:2},
-  {kind:"thief",name:"奇怪的书外壳",lines:["里面夹着一张卡片。","恭喜你，这本书已经被我偷走了！\n         ----怪盗"],weight:0.35}
+  {kind:"thief",name:"奇怪的书外壳",lines:["里面夹着一张卡片。","恭喜你，这本书已经被我偷走了！\n         ----怪盗"],weight:0.05}
  ];
 }
 function doSurvey(){
@@ -313,13 +313,13 @@ function doSurvey(){
 function showCurrentResult(){
  const item=survey.results?.[survey.resultIndex];
  if(!item){
-  show("你仔细调查了一遍，没有发现什么。",[["继续调查","repeatSurvey"],["离开","leaveShelf"]]);return;
+  show("仔细寻找了一遍，没有发现什么。",[["继续寻找","repeatSurvey"],["离开","leaveShelf"]]);return;
  }
  if(item.kind==="book")markFound(shelfById(survey.shelf),item.book);
  const title=item.kind==="book"?item.book.name:item.name;
- const line="你发现了一本书：《"+title+"》";
+ const line="发现了一本书："+title+"";
  const next=item.kind==="book"?["打开","openFound"]:["打开","openPlaceholder"];
- show(line,[[next[0],next[1]],["继续调查","nextResult"],["离开","leaveShelf"]]);
+ show(line,[[next[0],next[1]],["继续寻找","nextResult"],["离开","leaveShelf"]]);
 }
 function openPlaceholder(){
  const item=survey.results?.[survey.resultIndex];if(!item){showCurrentResult();return}
