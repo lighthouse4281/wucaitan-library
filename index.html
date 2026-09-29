@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>五彩滩图书馆</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101114;color:#e8e8e8;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+body{min-height:100vh}#app{max-width:760px;margin:auto;min-height:100vh;padding:18px 16px 100px}
+#screen{white-space:pre-wrap;line-height:1.8;min-height:55vh}.title{text-align:center;margin:8vh 0 5vh}
+button{display:block;width:100%;margin:8px 0;padding:12px;background:#17191d;color:#eee;border:1px solid #454951;border-radius:4px;text-align:left;font:inherit}
+button:hover{background:#20232a}#inputbar{position:fixed;bottom:0;left:0;right:0;background:#101114;border-top:1px solid #34373d;padding:10px}
+#inputwrap{max-width:760px;margin:auto;display:flex;gap:8px}#cmd{flex:1;min-width:0;background:#181a1f;color:#fff;border:1px solid #555b65;padding:11px;font:inherit;border-radius:4px}
+#send{width:auto;margin:0;padding:10px 16px}.rpghead{opacity:.7;border-bottom:1px solid #30333a;padding-bottom:8px;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div id="app"><div id="screen"></div></div>
+<div id="inputbar"><div id="inputwrap">
+<input id="cmd" autocomplete="off" inputmode="text" placeholder="输入文字或编号（也可点击按钮）">
+<button id="send">确定</button>
+</div></div>
+<script>
+const KEY="wucaitan_v04";
+const SESSION_KEY="wucaitan_session_v04";
+
+const DEFAULT_DATA={
+ passes:[
+  {id:"friend",code:"4281",name:"水母的朋友",admin:false},
+  {id:"fox",code:"1212",name:"狐狸",admin:false},
+  {id:"jelly",code:"xin",name:"灯塔水母",admin:true}
+ ],
+ intro:{lines:["海：欢迎","海：这里是五彩滩图书馆的现实入口","海：因为与现实链接，所以请原谅我使用现实式的身份确认方式"],hint:["海：这里有一条给某人的提示：","海：狐狸的生日"]},
+ seaDialogs:{
+  generic:{"1":["海：这里是五彩滩图书馆","海：我是海，如你所见","海没有说更多"],"2":["海说了一些奇怪的客套话"]},
+  fox:{"1":["海：你好，大名鼎鼎的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"],"2":["海：很抱歉，但是我不能对你说这个"]},
+  friend:{"1":["海：这里是五彩滩图书馆","海：我是海，如你所见","海没有说更多"],"2":["海说了一些奇怪的客套话"]},
+  jelly:{"1":["海：这里是五彩滩图书馆","海：我是海，如你所见","海没有说更多"],"2":["海：很抱歉，但是我不能对你说这个"]}
+ },
+ sections:[
+  {id:"A",name:"A区",description:"一片安静的书架区域。",
+   shelves:[{id:"a1",name:"靠窗的书架"},{id:"a2",name:"高处的书架"},{id:"a3",name:"被灰尘覆盖的书架"}],
+   books:[
+    {id:"a1",name:"潮声备忘录",visible:["friend","fox","jelly"],pages:[{text:"第一页。\n纸上只有一些关于海潮的记录。",image:"",caption:""},{text:"第二页。\n后面的字迹逐渐变得模糊。",image:"",caption:""}]},
+    {id:"a2",name:"只给狐狸的册页",visible:["fox","jelly"],pages:[{text:"这里似乎只写给某一位读者。",image:"",caption:""}]}
+   ]},
+  {id:"B",name:"B区",description:"更深处的区域，光线很暗。",
+   shelves:[{id:"b1",name:"狭窄的书架"},{id:"b2",name:"无人整理的书架"}],
+   books:[{id:"b1",name:"未寄出的信",visible:["friend","fox","jelly"],pages:[{text:"信没有署名。\n你决定暂时把它放回原处。",image:"",caption:""}]}]}
+ ]};
+
+let DATA=loadData(), session=loadSession(), state="start";
+let temp={section:null,shelf:null,drawn:[],book:null,dialogKey:null};
+
+const screen=document.getElementById("screen"),cmd=document.getElementById("cmd"),send=document.getElementById("send");
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function loadData(){try{return JSON.parse(localStorage.getItem(KEY))||clone(DEFAULT_DATA)}catch(e){return clone(DEFAULT_DATA)}}
+function saveData(){localStorage.setItem(KEY,JSON.stringify(DATA))}
+function loadSession(){try{return JSON.parse(sessionStorage.getItem(SESSION_KEY))||null}catch(e){return null}}
+function saveSession(){sessionStorage.setItem(SESSION_KEY,JSON.stringify(session))}
+function clearSession(){session=null;sessionStorage.removeItem(SESSION_KEY)}
+function currentPass(){return DATA.passes.find(p=>p.id===session?.passId)}
+function pname(){return currentPass()?.name||"未知的访客"}
+function admin(){return !!currentPass()?.admin}
+
+function show(text,buttons=[]){
+ screen.innerHTML="";
+ const t=document.createElement("div");t.textContent=text;screen.appendChild(t);
+ buttons.forEach(([label,value])=>{const b=document.createElement("button");b.textContent=label;b.onclick=()=>handle(value);screen.appendChild(b)})
+}
+function handle(x){
+ x=String(x??"").trim();
+ if(!x)return;
+ if(x==="/admin"&&admin()){adminMenu();cmd.value="";return}
+ if(x==="/start"){start();cmd.value="";return}
+ switch(state){
+  case"start":startChoice(x);break;case"intro":introChoice(x);break;case"verify":verify(x);break;case"verifyResult":verifyResult(x);break;
+  case"library":libraryChoice(x);break;case"entrance":entranceChoice(x);break;case"sea":seaChoice(x);break;
+  case"section":sectionChoice(x);break;case"shelf":shelfChoice(x);break;case"placeholder":placeholderChoice(x);break;
+  case"book":bookChoice(x);break;case"page":pageChoice(x);break;case"admin":adminChoice(x);break;case"adminPass":adminPassChoice(x);break;
+  default:start();
+ }
+ cmd.value="";
+}
+function start(){
+ state="start";
+ if(session&&DATA.passes.some(p=>p.id===session.passId)){
+  show("----------图书馆入口-----------\n\n                         海\n\n\n你已经拥有通行证：【"+pname()+"】",[
+   ["直接进入图书馆","library"],["重新进行身份确认","intro"],["与海交谈","sea"]]);
+ }else show("----------图书馆入口-----------\n\n                         海\n\n\n点击“海”或“图书馆入口”开始。",[["海","sea"],["图书馆入口","intro"]]);
+}
+function startChoice(x){if(x==="library"||x==="enter"){library();return}if(x==="intro"||x==="reverify"){intro();return}if(x==="sea"){sea();return}start()}
+function intro(){
+ state="intro";show(DATA.intro.lines.join("\n")+"\n\n",[["1. 输入验证","verifyScreen"],["2. 提示","hint"]])
+}
+function introChoice(x){if(x==="verifyScreen"||x==="1"){verifyScreen();return}if(x==="hint"||x==="2"){show(DATA.intro.hint.join("\n")+"\n\n",[["返回","intro"]]);return}intro()}
+function verifyScreen(){state="verify";show("请输入现实数字：\n\n（实际也可以输入字母和数字）");cmd.placeholder="输入通行证编号"}
+function verify(x){
+ const p=DATA.passes.find(p=>p.code.toLowerCase()===x.toLowerCase());
+ if(!p){state="verifyResult";show("验证结果：未知的访客\n\n没有找到对应的通行证。",[["重新输入","verifyScreen"],["返回","intro"]]);return}
+ session={passId:p.id};saveSession();show("海：你好，【"+p.name+"】\n海：请进",[["进入图书馆","library"]])
+}
+function verifyResult(x){if(x==="verifyScreen"){verifyScreen();return}if(x==="intro"){intro();return}verifyScreen()}
+function library(){
+ state="library";
+ const bs=DATA.sections.map(s=>[s.name,"section:"+s.id]);bs.push(["图书馆入口","entrance"]);if(admin())bs.push(["灯塔水母编辑室","admin"]);
+ show("========== 五彩滩图书馆 ==========\n\n当前通行证："+pname()+"\n\n请选择要前往的地方：",bs)
+}
+function libraryChoice(x){if(x==="entrance"){entrance();return}if(x==="admin"&&admin()){adminMenu();return}if(x.startsWith("section:")){section(x.slice(8));return}library()}
+function entrance(){
+ state="entrance";show("========== 图书馆入口 ==========\n\n海\n\n你站在五彩滩图书馆的入口。",[
+  ["进入图书馆内部","library"],["与海交谈","sea"],["离开图书馆","leave"]])
+}
+function entranceChoice(x){if(x==="library"){library();return}if(x==="sea"){sea();return}if(x==="leave"){clearSession();start();return}entrance()}
+function sea(){
+ state="sea";let k=currentPass()?.id==="fox"?"fox":currentPass()?.id==="friend"?"friend":currentPass()?.id==="jelly"?"jelly":"generic";temp.dialogKey=k;
+ show("海：请问有什么事吗？【"+pname()+"】\n\n",[["1. 这里是哪里？你是谁？","1"],["2. 我想听大人话","2"],["0. 再见","0"]])
+}
+function seaChoice(x){
+ if(x==="0"){entrance();return}
+ const lines=DATA.seaDialogs[temp.dialogKey]?.[x];if(!lines){sea();return}
+ show(lines.join("\n")+"\n\n",[["回到图书馆入口","entrance"]])
+}
+function section(id){
+ const s=DATA.sections.find(s=>s.id===id);if(!s){library();return}temp.section=id;state="section";
+ show("【"+s.name+"】\n\n"+s.description+"\n\n像一处文字构成的RPG场景。你可以调查书架。",[
+  ...s.shelves.map(sh=>[sh.name,"shelf:"+sh.id]),["离开本区","library"],["回到图书馆入口","entrance"]])
+}
+function sectionChoice(x){if(x==="library"){library();return}if(x==="entrance"){entrance();return}if(x.startsWith("shelf:")){shelf(x.slice(6));return}section(temp.section)}
+function shelf(id){
+ const s=DATA.sections.find(s=>s.id===temp.section);if(!s)return library();const sh=s.shelves.find(x=>x.id===id);if(!sh)return section(temp.section);
+ temp.shelf=id;temp.drawn=drawBooks(s);state="shelf";
+ let text="【"+s.name+" / "+sh.name+"】\n\n书架上这次抽到了 "+temp.drawn.length+" 项。\n\n";
+ text+=temp.drawn.length?temp.drawn.map((b,i)=>"["+i+"] "+b.name).join("\n"):"什么也没有。";
+ show(text,[...temp.drawn.map((b,i)=>[b.name,"draw:"+i]),["再次抽取","reshuffle"],["返回区域","section"],["回到入口","entrance"]])
+}
+function drawBooks(s){
+ const real=s.books.filter(b=>b.visible.includes(currentPass()?.id));
+ const ph=[{kind:"plain",name:"书"},{kind:"odd",name:"封面奇怪的书"},{kind:"sealed",name:"崭新到未开封的书"}];
+ const pool=[];
+ real.forEach(b=>{for(let i=0;i<3;i++)pool.push(b)});ph.forEach(p=>pool.push(p));
+ const n=Math.floor(Math.random()*4),out=[];
+ for(let i=0;i<n&&pool.length;i++){const b=pool[Math.floor(Math.random()*pool.length)];if(!out.some(v=>v.id===b.id||v.kind===b.kind))out.push(b)}
+ return out
+}
+function shelfChoice(x){if(x==="reshuffle"){shelf(temp.shelf);return}if(x==="section"){section(temp.section);return}if(x==="entrance"){entrance();return}if(x.startsWith("draw:")){const b=temp.drawn[Number(x.slice(5))];if(b)openDraw(b);return}shelf(temp.shelf)}
+function openDraw(b){
+ if(b.kind){state="placeholder";const msg=b.kind==="plain"?"只是书。":b.kind==="odd"?"你看不懂里面的内容。":"因为没有开封，你不敢打开看";show(msg,[["返回书架","shelf"]]);return}
+ temp.book=b;book()
+}
+function placeholderChoice(x){if(x==="shelf"){shelf(temp.shelf);return}shelf(temp.shelf)}
+function book(){
+ state="book";show("《"+temp.book.name+"》\n\n这是一本有实际内容的书。",[["打开第一页","page:0"],["返回书架","shelf"]])
+}
+function bookChoice(x){if(x==="shelf"){shelf(temp.shelf);return}if(x.startsWith("page:")){page(Number(x.slice(5)));return}book()}
+function page(i){
+ const b=temp.book;if(!b?.pages[i])return book();state="page";const p=b.pages[i];let text="《"+b.name+"》 — 第 "+(i+1)+" 页\n\n"+p.text;if(p.image)text+="\n\n[图片]\n"+p.caption;
+ const bs=[];if(i>0)bs.push(["上一页","page:"+(i-1)]);if(i<b.pages.length-1)bs.push(["下一页","page:"+(i+1)]);bs.push(["返回书本","book"],["返回书架","shelf"]);show(text,bs)
+}
+function pageChoice(x){if(x==="book"){book();return}if(x==="shelf"){shelf(temp.shelf);return}if(x.startsWith("page:"))page(Number(x.slice(5)))}
+
+function adminMenu(){
+ state="admin";show("========== 灯塔水母编辑室 ==========\n\n当前身份：【"+pname()+"】\n\n请选择：",[
+  ["通行证管理","adminPass"],["区域与书架管理","adminSection"],["返回图书馆","library"]])
+}
+function adminChoice(x){if(x==="adminPass"){adminPass();return}if(x==="adminSection"){adminSection();return}if(x==="library"){library();return}adminMenu()}
+function adminPass(){
+ state="adminPass";const n=DATA.passes.filter(p=>p.admin).length;
+ show("========== 通行证管理 ==========\n\n管理员数量："+n+"\n\n管理员权限与普通通行证分开保存。\n系统规则：不能删除最后一名管理员。\n\n"+DATA.passes.map((p,i)=>"["+i+"] "+p.name+" / "+(p.admin?"管理员":"普通")).join("\n"),[
+  ["管理员权限说明","adminHelp"],["返回编辑室","admin"]])
+}
+function adminPassChoice(x){if(x==="adminHelp"){show("管理员权限必须始终至少保留一人。\n\n下一版编辑器会把“授予管理员权限”设计成明确的确认步骤，并阻止最后管理员被取消。",[["返回","adminPass"]]);return}if(x==="admin"){adminMenu();return}adminPass()}
+function adminSection(){
+ state="adminSection";
+ show("========== 区域与书架管理 ==========\n\n"+DATA.sections.map((s,i)=>"["+i+"] "+s.name+" / 书架 "+s.shelves.length+" / 书目 "+s.books.length).join("\n")+"\n\n本 V0.4 先把 RPG 场景结构跑通；新内容编辑暂留接口。",[
+  ...DATA.sections.map(s=>[s.name,"section:"+s.id]),["返回编辑室","admin"]])
+}
+function adminSectionChoice(x){if(x==="admin"){adminMenu();return}if(x.startsWith("section:")){section(x.slice(8));return}adminSection()}
+
+send.onclick=()=>{handle(cmd.value);cmd.value=""}
+cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();handle(cmd.value);cmd.value=""}})
+start();
+</script>
+</body>
+</html>
