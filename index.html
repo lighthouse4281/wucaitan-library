@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1317">
+<title>五彩滩图书馆</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% 0%,#18201d,#0e1317 55%);color:#d9e0e3;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
+main{width:min(920px,100%);margin:auto;min-height:100vh;padding:18px 16px 30px;display:flex;flex-direction:column}
+header{padding:8px 0 16px;border-bottom:1px solid #39433d;margin-bottom:18px}
+.brand{font-size:20px;letter-spacing:.12em}
+.status{font-size:12px;color:#708087;margin-top:5px}
+#out{white-space:pre-wrap;word-break:break-word;line-height:1.85;min-height:56vh}
+.controls{position:sticky;bottom:0;background:linear-gradient(transparent,#0e1317 18%);padding-top:16px}
+.inputrow{display:flex;gap:8px}
+#cmd{min-width:0;flex:1;background:#080b0e;color:#fff;border:1px solid #3b474e;border-radius:7px;padding:13px 12px;font:inherit;font-size:16px;outline:none}
+#cmd:focus{border-color:#82cdd0}
+#send{background:#18262b;color:#d9e0e3;border:1px solid #4a646b;border-radius:7px;padding:0 18px;font:inherit;min-width:70px}
+#send:active{background:#263b42}
+.quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.quick button{background:#121c20;color:#aebbc0;border:1px solid #2e3b41;border-radius:6px;padding:8px 10px;font:inherit}
+.notice{font-size:12px;color:#66747b;margin-top:8px}
+.cyan{color:#8bd4d7}.gold{color:#e3c982}.dim{color:#738087}.red{color:#df8585}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div class="brand" id="brand">五彩滩图书馆</div>
+ <div class="status" id="status">现实入口 · 未确认身份</div>
+</header>
+<pre id="out"></pre>
+<div class="controls">
+ <div class="inputrow">
+  <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入……">
+  <button id="send" type="button">确认</button>
+ </div>
+ <div class="quick" id="quick"></div>
+ 
+</div>
+</main>
+<script>
+const DEFAULT_DATA={
+ title:"五彩滩图书馆",
+ homeLines:[
+  "海：欢迎",
+  "海：这里是五彩滩图书馆的现实入口",
+  "海：因为与现实链接，所以请原谅我使用现实式的身份确认方式"
+ ],
+ hint:["海：这里有一条给某人的提示：","海：狐狸的生日"],
+ passes:[
+  {id:"friend_jellyfish",code:"4281",name:"水母的朋友",admin:false},
+  {id:"fox",code:"1212",name:"狐狸",admin:false},
+  {id:"lighthouse_jellyfish",code:"xin",name:"灯塔水母",admin:true}
+ ],
+ sections:[
+  {id:"section_a",name:"A区",description:"",books:[
+   {id:"book_tide",shelf:"a_window",name:"潮声备忘录",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
+    {text:"第一页：海风从很远的地方吹来。",image:"",caption:""},
+    {text:"第二页：这里以后可以放真正的故事。",image:"",caption:""}
+   ]},
+   {id:"book_fox",shelf:"a_high",name:"只给狐狸的册页",description:"",visibleTo:["fox","lighthouse_jellyfish"],pages:[
+    {text:"这一页只对狐狸与灯塔水母开放。",image:"",caption:""}
+   ]}
+  ]},
+  {id:"section_b",name:"B区",description:"",books:[
+   {id:"book_admin",shelf:"b_narrow",name:"未命名档案",description:"",visibleTo:["lighthouse_jellyfish"],pages:[
+    {text:"这是管理员专用示例书。",image:"",caption:""}
+   ]}
+  ]},
+  {id:"section_c",name:"C区",description:"",books:[]},
+  {id:"section_d",name:"D区",description:"",books:[]}
+ ],
+ shelves:{
+  section_a:[
+   {id:"a_window",name:"靠窗的书架"},
+   {id:"a_high",name:"高处的书架"},
+   {id:"a_dust",name:"被灰尘覆盖的书架"}
+  ],
+  section_b:[
+   {id:"b_narrow",name:"狭窄的书架"},
+   {id:"b_unordered",name:"无人整理的书架"}
+  ],
+  section_c:[],section_d:[]
+ },
+ shelfDialogues:{
+  default:["你站在书架前。","这里的书似乎没有按照什么明确的顺序排列。"],
+  fox:["你站在书架前。","这里似乎没有什么异常。","你决定仔细看看。"],
+  friend_jellyfish:["你站在书架前。","灰尘之间留下了一点不明显的痕迹。","你决定仔细看看。"],
+  lighthouse_jellyfish:["你站在书架前。","你知道这里曾经有人整理过。","但现在，它又恢复了原来的样子。"]
+ },
+ story:{
+  start:"start",
+  nodes:{
+   start:{speaker:"海",text:"欢迎",choices:[{label:"继续",to:"reality"}]},
+   reality:{speaker:"海",text:"这里是五彩滩图书馆的现实入口。",choices:[{label:"继续",to:"identity"}]},
+   identity:{speaker:"海",text:"因为与现实链接，所以请原谅我使用现实式的身份确认方式。",choices:[
+    {label:"输入验证",to:"verify"},
+    {label:"提示",to:"hint"}
+   ]}
+  }
+ }
+};
+
+let DATA=loadData();
+if(!DATA.shelves)DATA.shelves={section_a:[{id:"a_window",name:"靠窗的书架"},{id:"a_high",name:"高处的书架"},{id:"a_dust",name:"被灰尘覆盖的书架"}],section_b:[{id:"b_narrow",name:"狭窄的书架"},{id:"b_unordered",name:"无人整理的书架"}],section_c:[],section_d:[]};
+if(!DATA.shelfDialogues)DATA.shelfDialogues=clone(DEFAULT_DATA.shelfDialogues);
+let state="entrance", currentNode=DATA.story.start, pass=null, section=null, book=null, page=0, edit={}, survey={shelf:null,attempts:{},dialogLines:[],dialogIndex:0,results:[],resultIndex:0,foundByShelf:{}};
+try{const savedPassId=localStorage.getItem("wucaitan_v04_pass");if(savedPassId){pass=DATA.passes.find(p=>p.id===savedPassId)||null}}catch(e){}
+try{survey.foundByShelf=JSON.parse(localStorage.getItem("wucaitan_v04_found")||"{}")}catch(e){survey.foundByShelf={}}
+
+const out=document.getElementById("out"),cmd=document.getElementById("cmd"),brand=document.getElementById("brand"),status=document.getElementById("status"),quick=document.getElementById("quick");
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function loadData(){
+ try{
+  const x=JSON.parse(localStorage.getItem("wucaitan_v02"));
+  if(x&&Array.isArray(x.passes)&&Array.isArray(x.sections)&&x.story)return x;
+ }catch(e){}
+ return clone(DEFAULT_DATA);
+}
+function saveData(){localStorage.setItem("wucaitan_v02",JSON.stringify(DATA))}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function render(text){
+ out.textContent=text;
+ out.scrollTop=out.scrollHeight;
+ window.scrollTo(0,document.body.scrollHeight);
+}
+function setStatus(){
+ brand.textContent=DATA.title;
+ status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
+}
+function buttons(items){
+ quick.innerHTML="";
+ (items||[]).forEach(([label,value])=>{
+  const b=document.createElement("button");b.textContent=label;b.onclick=()=>{cmd.value=value;submit()};
+  quick.appendChild(b);
+ });
+}
+function show(s,btns=[]){render(s);buttons(btns);}
+function submit(){handle(cmd.value);cmd.value="";}
+document.getElementById("send").onclick=submit;
+cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submit()}});
+
+
+function startStory(){
+ state="entrance";setStatus();
+ let s="----------图书馆入口-----------\n\n";
+ s+="                              海\n\n";
+ if(pass)s+="你已经留下过自己的通行证。\n\n";
+ s+="[图书馆入口]\n[海]";
+ if(pass)s+="\n[重新进行身份确认]";
+ const bs=[["图书馆入口","libraryEnter"],["海","seaEnter"]];
+ if(pass)bs.push(["重新进行身份确认","reverify"]);
+ show(s,bs);
+}
+function seaEnter(){
+ if(!pass){startOriginalIntro();return}
+ seaDialogue();
+}
+function libraryEnter(){
+ if(!pass){startOriginalIntro();return}
+ library();
+}
+function reverify(){state="verify";show("请输入现实数字：\n\n实际可以输入字母和数字。\n");}
+function startOriginalIntro(){state="story";currentNode=DATA.story.start;showNode();}
+function showNode(){
+ const n=DATA.story.nodes[currentNode];
+ if(!n){startIntroFallback();return}
+ let s="";
+ if(n.speaker)s+=n.speaker+"：";
+ s+=n.text+"\n\n";
+ const choices=n.choices||[];
+ choices.forEach((c,i)=>s+="["+(i+1)+"] "+c.label+"\n");
+ if(!choices.length)s+="[回车] 继续\n";
+ show(s,choices.map((c,i)=>[(i+1)+". "+c.label,String(i+1)]));
+}
+function chooseNode(x){
+ const n=DATA.story.nodes[currentNode];
+ const choices=n?.choices||[];
+ if(!choices.length){library();return}
+ const c=choices[Number(x)-1];
+ if(!c){showNode();return}
+ if(c.to==="verify"){verify();return}
+ if(c.to==="hint"){hint();return}
+ currentNode=c.to;showNode();
+}
+function startIntroFallback(){
+ state="intro";
+ show(DATA.homeLines.join("\n")+"\n\n[1] 输入验证\n[2] 提示\n[r] 重置本地数据\n\n请输入：",[
+ ["1","1"],["2","2"]
+ ]);
+}
+function seaDialogue(){
+ state="seaMenu";
+ let n=pass?.name||"未知的访客";
+ show("海：请问有什么事吗？“"+n+"”\n\n[1] 这里是哪里？你是谁？\n[2] 我想听大人话\n[0] 再见",[["1","1"],["2","2"],["0","0"]]);
+}
+function seaChoice(x){
+ if(x==="0"){startStory();return}
+ let id=pass?.id||"";
+ let lines=[];
+ if(x==="1"){
+  if(id==="fox") lines=["海：你好，大名鼎鼎的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"];
+  else lines=["海：这里是五彩滩图书馆","海：我是海，如你所见","海没有说更多"];
+ }else if(x==="2"){
+  if(id==="friend_jellyfish") lines=["海说了一些奇怪的客套话"];
+  else if(id==="fox"||id==="lighthouse_jellyfish") lines=["海：很抱歉，但是我不能对你说这个"];
+  else lines=["海：……","海没有回答"];
+ }
+ survey.dialogLines=lines;survey.dialogIndex=0;state="seaDialog";showSeaLine();
+}
+function showSeaLine(){
+ const i=survey.dialogIndex, lines=survey.dialogLines;
+ if(i>=lines.length){seaDialogue();return}
+ show(lines[i],[[i<lines.length-1?"继续":"回到海这里","nextSea"]]);
+}
+function nextSea(){survey.dialogIndex++;showSeaLine()}
+function verify(){state="verify";show("请输入现实数字：\n\n实际可以输入字母和数字。\n");}
+function hint(){state="hint";show(DATA.hint.join("\n")+"\n\n[回车] 返回");}
+function authenticate(code){
+ const p=DATA.passes.find(p=>p.code===code);
+ if(!p){state="verifyFail";show("海：……\n\n这串编号没有对应的记录。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
+ pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
+ show("海：你好，"+p.name+"。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+}
+function library(){
+ state="library";setStatus();
+ let s=DATA.title+"\n\n";
+ DATA.sections.forEach((x,i)=>s+="["+(i+1)+"] "+x.name+"\n");
+ s+="\n[sea] 海";
+ s+="\n[0] 返回入口";
+ if(pass?.admin)s+="\n[admin] 灯塔水母编辑室";
+ show(s,DATA.sections.map((x,i)=>[(i+1)+". "+x.name,String(i+1)]).concat([["海","sea"],pass?.admin?["编辑室","admin"]:null].filter(Boolean)));
+}
+function visibleBooks(sec){
+ return sec.books.filter(b=>b.visibleTo.includes(pass?.id)||pass?.admin);
+}
+function saveFound(){try{localStorage.setItem("wucaitan_v04_found",JSON.stringify(survey.foundByShelf||{}))}catch(e){}}
+function foundBooksForShelf(id){
+ const ids=survey.foundByShelf?.[id]||[];
+ return ids.map(bid=>visibleBooks(section).find(b=>b.id===bid)).filter(Boolean);
+}
+function markFound(sh,b){
+ if(!survey.foundByShelf[sh.id])survey.foundByShelf[sh.id]=[];
+ if(!survey.foundByShelf[sh.id].includes(b.id))survey.foundByShelf[sh.id].push(b.id);
+ saveFound();
+}
+function showSection(sec){
+ section=sec;state="scene";
+ const shelves=(DATA.shelves?.[sec.id]||[]);
+ let s="---------- "+sec.name+" ----------\n\n";
+ if(sec.description)s+=sec.description+"\n\n";
+ if(shelves.length){
+  shelves.forEach((sh,i)=>{s+="["+(i+1)+"] "+sh.name+"\n";const found=foundBooksForShelf(sh.id);found.forEach(b=>s+="    · "+b.name+"\n")});
+ }else{
+  s+="这里还没有可以调查的书架。\n";
+ }
+ s+="\n[B] 返回图书馆";
+ const bs=[];shelves.forEach((sh,i)=>{bs.push([(i+1)+". "+sh.name,"shelf:"+sh.id]);foundBooksForShelf(sh.id).forEach(b=>bs.push(["查看《"+b.name+"》","found:"+b.id]))});
+ bs.push(["返回","B"]);
+ show(s,bs);
+}
+function shelfById(id){return (DATA.shelves?.[section?.id]||[]).find(x=>x.id===id)}
+function visibleShelfBooks(sh){
+ const all=visibleBooks(section);
+ const foundElsewhere=new Set(Object.values(survey.foundByShelf||{}).flat());
+ return all.filter(b=>(!b.shelf||b.shelf===sh.id)&&!foundElsewhere.has(b.id));
+}
+function beginShelfSurvey(id){
+ const sh=shelfById(id);if(!sh){showSection(section);return}
+ survey.shelf=id;survey.dialogIndex=0;survey.resultIndex=0;survey.results=[];
+ const key=pass?.id&&DATA.shelfDialogues?.[pass.id]?pass.id:"default";
+ survey.dialogLines=DATA.shelfDialogues?.[key]||DATA.shelfDialogues.default;
+ state="shelfVN";showShelfLine();
+}
+function showShelfLine(){
+ const i=survey.dialogIndex,lines=survey.dialogLines||[];
+ if(i<lines.length){show(lines[i],[["继续","shelfNext"]]);return}
+ state="surveyChoice";
+ show("你看着书架。\n\n要仔细调查吗？",[["调查","doSurvey"],["离开","leaveShelf"]]);
+}
+function shelfNext(){survey.dialogIndex++;showShelfLine()}
+function makePlaceholderPool(){
+ return [
+  {kind:"plain",name:"书",lines:["只是书。"],weight:3},
+  {kind:"odd",name:"封面奇怪的书",lines:["你看不懂里面的内容。"],weight:2},
+  {kind:"sealed",name:"崭新到未开封的书",lines:["因为没有开封，你不敢打开看。"],weight:2},
+  {kind:"empty",name:"没有封面的书",lines:["里面是空的。"],weight:2},
+  {kind:"thief",name:"奇怪的书外壳",lines:["里面夹着一张卡片。","恭喜你，这本书已经被我偷走了！\n         ----怪盗"],weight:0.35}
+ ];
+}
+function doSurvey(){
+ const id=survey.shelf, sh=shelfById(id);
+ const n=(survey.attempts[id]||0)+1;survey.attempts[id]=n;
+ const books=visibleShelfBooks(sh);
+ let pool=[];
+ books.forEach(b=>pool.push({kind:"book",book:b,weight:Math.min(3+n,12)}));
+ makePlaceholderPool().forEach(x=>pool.push(x));
+ const count=Math.floor(Math.random()*4),picked=[],used=new Set();
+ while(picked.length<count&&pool.length){
+  const total=pool.reduce((a,x)=>a+x.weight,0);let r=Math.random()*total,idx=0;
+  for(;idx<pool.length;idx++){r-=pool[idx].weight;if(r<=0)break}
+  idx=Math.min(idx,pool.length-1);
+  const x=pool.splice(idx,1)[0];
+  const key=x.kind==="book"?"book:"+x.book.id:x.kind;
+  if(!used.has(key)){used.add(key);picked.push(x)}
+ }
+ survey.results=picked;survey.resultIndex=0;state="surveyResult";showCurrentResult();
+}
+function showCurrentResult(){
+ const item=survey.results?.[survey.resultIndex];
+ if(!item){
+  show("你仔细调查了一遍，没有发现什么。",[["继续调查","repeatSurvey"],["离开","leaveShelf"]]);return;
+ }
+ if(item.kind==="book")markFound(shelfById(survey.shelf),item.book);
+ const title=item.kind==="book"?item.book.name:item.name;
+ const line="你发现了一本书：《"+title+"》";
+ const next=item.kind==="book"?["打开","openFound"]:["打开","openPlaceholder"];
+ show(line,[[next[0],next[1]],["继续调查","nextResult"],["离开","leaveShelf"]]);
+}
+function openPlaceholder(){
+ const item=survey.results?.[survey.resultIndex];if(!item){showCurrentResult();return}
+ state="placeholder";survey.dialogLines=item.lines||["里面什么也没有。"];survey.dialogIndex=0;showPlaceholderLine();
+}
+function showPlaceholderLine(){
+ const lines=survey.dialogLines||[],i=survey.dialogIndex||0;
+ if(i<lines.length){show(lines[i],[[i<lines.length-1?"继续":"返回调查结果",i<lines.length-1?"placeholderNext":"placeholderDone"]]);return}
+ showCurrentResult();
+}
+function placeholderNext(){survey.dialogIndex++;showPlaceholderLine()}
+function placeholderDone(){showCurrentResult()}
+function nextResult(){survey.resultIndex++;showCurrentResult()}
+function openFound(){const f=survey.results?.[survey.resultIndex];if(f&&f.kind==="book"){survey.returnToSurvey=true;openBook(f.book)}else openPlaceholder()}
+function repeatSurvey(){beginShelfSurvey(survey.shelf)}
+function leaveShelf(){survey.returnToSurvey=false;showSection(section)}
+
+function openBook(b){book=b;page=0;showBookPage()}
+function showBookPage(){
+ state="book";const p=book.pages[page]||{text:"",image:"",caption:""};
+ let s="---------- "+book.name+" ----------\n\n";
+ s+="第 "+(page+1)+" / "+book.pages.length+" 页\n\n";
+ if(p.image)s+="[图片]\n"+p.image+"\n"+(p.caption?p.caption+"\n":"")+"\n";
+ s+=(p.text||"")+"\n\n";
+ s+="[回车] 下一页";
+ if(page>0)s+="\n[q] 返回书架";
+ show(s);
+}
+function returnFromFoundBook(){survey.returnToSurvey=false;state="surveyChoice";show("你合上了《"+book.name+"》。\n\n要继续调查吗？",[["继续调查","repeatSurvey"],["离开","leaveShelf"]])}
+function nextPage(){if(page<book.pages.length-1){page++;showBookPage()}else if(survey.returnToSurvey)returnFromFoundBook();else showSection(section)}
+
+function isAdmin(){return !!pass?.admin}
+
+function adminHome(){
+ if(!isAdmin())return library();
+ state="admin";
+ show("================================\n        灯塔水母 · 编辑室\n================================\n\n"+
+ "这里是五彩滩图书馆的内容管理区域。\n\n"+
+ "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[B] 返回图书馆\n\n>",
+ [["主页","1"],["剧情","2"],["通行证","3"],["分区","4"],["书目","5"],["书页","6"],["权限","7"],["数据","8"]]);
+}
+function adminHomeChoice(x){
+ if(x==="0"){library();return}
+ if(x==="1")adminHomepage();
+ else if(x==="2")adminStory();
+ else if(x==="3")adminPasses();
+ else if(x==="4")adminSections();
+ else if(x==="5")adminBooks();
+ else if(x==="6")adminPageSelect();
+ else if(x==="7")adminVisibility();
+ else if(x==="8")adminData();
+ else adminHome();
+}
+
+function adminHomepage(){
+ state="adminHomepage";
+ let s="========== 图书馆主页 ==========\n\n";
+ s+="网站名称："+DATA.title+"\n\n";
+ DATA.homeLines.forEach((x,i)=>s+="["+i+"] "+x+"\n");
+ s+="\n修改名称：title=新名称\n修改文字：line=编号=新文字\n新增文字：add=新文字\n删除文字：del=编号\n\n[B] 返回";
+ show(s);
+}
+function adminHomepageChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x.startsWith("title=")){DATA.title=x.slice(6);saveData();setStatus();adminHomepage();return}
+ if(x.startsWith("line=")){let a=x.slice(5).split("="),i=Number(a.shift());if(DATA.homeLines[i]!=null)DATA.homeLines[i]=a.join("=");saveData();adminHomepage();return}
+ if(x.startsWith("add=")){DATA.homeLines.push(x.slice(4));saveData();adminHomepage();return}
+ if(x.startsWith("del=")){DATA.homeLines.splice(Number(x.slice(4)),1);saveData();adminHomepage();return}
+ adminHomepage();
+}
+
+function adminStory(){
+ state="adminStory";
+ const nodes=DATA.story.nodes;
+ let s="========== 引入与剧情 ==========\n\n";
+ Object.keys(nodes).forEach(id=>{
+  const n=nodes[id];s+="["+id+"] "+(n.speaker?n.speaker+"：":"")+n.text+"\n";
+  (n.choices||[]).forEach((c,i)=>s+="   → "+(i+1)+". "+c.label+" → "+c.to+"\n");
+ });
+ s+="\n编辑节点：edit=id|说话者|内容\n新增节点：add=id|说话者|内容\n删除节点：del=id\n新增分支：choice=id|选项文字|目标节点ID\n删除分支：choice-del=id|编号\n查看结构：tree\n";
+ s+="\n当前入口："+DATA.story.start+"\n修改入口：start=节点ID\n\n[B] 返回";
+ show(s);
+}
+function adminStoryChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x==="tree"){adminStory();return}
+ if(x.startsWith("start=")){DATA.story.start=x.slice(6);saveData();adminStory();return}
+ if(x.startsWith("edit=")){
+  const v=x.slice(5).split("|"),id=v.shift();
+  if(DATA.story.nodes[id])DATA.story.nodes[id]={speaker:v[0]||"",text:v[1]||"",choices:DATA.story.nodes[id].choices||[]};
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("add=")){
+  const v=x.slice(4).split("|"),id=v.shift();
+  if(id&&!DATA.story.nodes[id])DATA.story.nodes[id]={speaker:v[0]||"",text:v[1]||"",choices:[]};
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("del=")){delete DATA.story.nodes[x.slice(4)];saveData();adminStory();return}
+ if(x.startsWith("choice=")){
+  const v=x.slice(7).split("|"),id=v.shift();
+  if(DATA.story.nodes[id])DATA.story.nodes[id].choices.push({label:v[0]||"继续",to:v[1]||DATA.story.start});
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("choice-del=")){
+  const v=x.slice(11).split("|"),id=v[0],i=Number(v[1]);
+  if(DATA.story.nodes[id])DATA.story.nodes[id].choices.splice(i,1);
+  saveData();adminStory();return;
+ }
+ adminStory();
+}
+
+function adminPasses(){
+ state="adminPass";
+ let s="========== 通行证 ==========\n\n";
+ DATA.passes.forEach((p,i)=>s+="["+i+"] "+p.name+" | 内部ID："+p.id+(p.admin?" | 管理员":"")+"\n");
+ s+="\n修改：edit=编号|内部ID|验证编号|显示名称|admin(true/false)\n新增：add=内部ID|验证编号|显示名称|admin(true/false)\n删除：del=编号\n\n注意：内部ID与验证编号不会显示给普通访客。\n\n[B] 返回";
+ show(s);
+}
+function adminPassChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x.startsWith("edit=")){
+  const v=x.slice(5).split("|"),i=Number(v.shift());
+  if(DATA.passes[i])DATA.passes[i]={id:v[0],code:v[1],name:v[2],admin:v[3]==="true"};
+  saveData();adminPasses();return;
+ }
+ if(x.startsWith("add=")){
+  const v=x.slice(4).split("|");if(v.length>=3)DATA.passes.push({id:v[0],code:v[1],name:v[2],admin:v[3]==="true"});
+  saveData();adminPasses();return;
+ }
+ if(x.startsWith("del=")){let i=Number(x.slice(4));if(DATA.passes[i]?.admin&&DATA.passes.filter(p=>p.admin).length<=1){adminPasses();return}DATA.passes.splice(i,1);saveData();adminPasses();return}
+ adminPasses();
+}
+
+function adminSections(){
+ state="adminSection";
+ let s="========== 图书馆分区 ==========\n\n";
+ DATA.sections.forEach((a,i)=>s+="["+i+"] "+a.name+" | "+a.books.length+" 本书\n");
+ s+="\n修改：edit=编号|新名称|描述\n新增：add=内部ID|名称|描述\n删除：del=编号\n\n书架（V4场景）："+(DATA.shelves?.[DATA.sections[0]?.id]?"已启用":"")+"\n\n[B] 返回";
+ show(s);
+}
+function adminSectionChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x.startsWith("edit=")){let v=x.slice(5).split("|"),i=Number(v.shift());if(DATA.sections[i]){DATA.sections[i].name=v[0]||DATA.sections[i].name;DATA.sections[i].description=v[1]||""}saveData();adminSections();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|");if(v.length>=2)DATA.sections.push({id:v[0],name:v[1],description:v[2]||"",books:[]});if(!DATA.shelves)DATA.shelves={};DATA.shelves[v[0]]=[];saveData();adminSections();return}
+ if(x.startsWith("del=")){DATA.sections.splice(Number(x.slice(4)),1);saveData();adminSections();return}
+ adminSections();
+}
+
+function allBookRefs(){
+ const arr=[];DATA.sections.forEach((s,si)=>s.books.forEach((b,bi)=>arr.push({s,si,b,bi})));return arr;
+}
+function adminBooks(){
+ state="adminBook";
+ let s="========== 书目 ==========\n\n";
+ DATA.sections.forEach((sct,si)=>{
+  s+="【"+si+"】"+sct.name+"\n";
+  sct.books.forEach((b,bi)=>s+="  ["+si+"."+bi+"] "+b.name+" | ID:"+b.id+"\n");
+ });
+ s+="\n修改：edit=分区,书目|内部ID|书名|简介|书架ID\n新增：add=分区|内部ID|书名|简介|书架ID\n删除：del=分区,书目\n编辑页面：pages=分区,书目\n\n[B] 返回";
+ show(s);
+}
+function adminBookChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x.startsWith("edit=")){let v=x.slice(5).split("|"),p=v.shift().split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b){b.id=v[0]||b.id;b.name=v[1]||b.name;b.description=v[2]||"";if(v[3])b.shelf=v[3]}saveData();adminBooks();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|"),s=DATA.sections[+v[0]];if(s)s.books.push({id:v[1],shelf:v[4]||"",name:v[2],description:v[3]||"",visibleTo:DATA.passes.map(p=>p.id),pages:[{text:"新的一页",image:"",caption:""}]});saveData();adminBooks();return}
+ if(x.startsWith("del=")){let p=x.slice(4).split(",");DATA.sections[+p[0]]?.books.splice(+p[1],1);saveData();adminBooks();return}
+ if(x.startsWith("pages=")){let p=x.slice(6).split(",");if(DATA.sections[+p[0]]?.books[+p[1]]){edit={si:+p[0],bi:+p[1]};adminPages()}return}
+ adminBooks();
+}
+
+function adminPageSelect(){
+ state="adminPageSelect";
+ let s="========== 书页与图片 ==========\n\n";
+ s+="请选择要编辑的书目：\n\n";
+
+ let count=0;
+ DATA.sections.forEach((sct)=>{
+  s+="【"+sct.name+"】\n";
+  sct.books.forEach((b)=>{
+   count++;
+   s+="["+count+"] "+b.name+"\n";
+  });
+  s+="\n";
+ });
+
+ if(count===0) s+="目前还没有书目。\n";
+ s+="输入书目编号。\n";
+ s+="[B] 返回编辑室";
+
+ const btns=[];
+ count=0;
+ DATA.sections.forEach((sct)=>{
+  sct.books.forEach((b)=>{
+   count++;
+   btns.push([String(count)+". "+b.name,String(count)]);
+  });
+ });
+ btns.push(["返回","B"]);
+ show(s,btns);
+}
+
+function adminPageSelectChoice(x){
+ const value=String(x).trim().toUpperCase();
+
+ if(value==="B" || value==="BACK"){
+  adminHome();
+  return;
+ }
+
+ const target=Number(value)-1;
+
+ if(!Number.isInteger(target)||target<0){
+  adminPageSelect();
+  return;
+ }
+
+ let count=0;
+ for(let si=0;si<DATA.sections.length;si++){
+  for(let bi=0;bi<DATA.sections[si].books.length;bi++){
+   if(count===target){
+    edit={si:si,bi:bi};
+    adminPages();
+    return;
+   }
+   count++;
+  }
+ }
+
+ adminPageSelect();
+}
+
+function adminPages(){
+ if(!edit || edit.si==null || edit.bi==null || !DATA.sections[edit.si] || !DATA.sections[edit.si].books[edit.bi]){
+  adminPageSelect();
+  return;
+ }
+ state="adminPage";
+ const b=DATA.sections[edit.si].books[edit.bi];
+ let s="========== 书页与图片 ==========\n\n《"+b.name+"》\n\n";
+ b.pages.forEach((p,i)=>s+="["+i+"] "+(p.text||"(无文字)")+(p.image?" | 图片":"")+"\n");
+ s+="\n修改文字：text=页码=内容\n修改图片：image=页码=图片地址\n图片说明：caption=页码=说明\n新增页面：add=文字|图片地址|图片说明\n删除页面：del=页码\n\n[B] 返回";
+ show(s);
+}
+
+function adminPageSelectChoice(x){
+ if(x==="0"){adminHome();return}
+ const target=Number(x);
+ if(!Number.isInteger(target)||target<0){adminPageSelect();return}
+ let count=0;
+ for(let si=0;si<DATA.sections.length;si++){
+  for(let bi=0;bi<DATA.sections[si].books.length;bi++){
+   if(count===target){
+    edit={si,bi};
+    adminPages();
+    return;
+   }
+   count++;
+  }
+ }
+ adminPageSelect();
+}
+function adminPageChoice(x){
+ const b=DATA.sections[edit.si].books[edit.bi];
+ if(String(x).trim().toUpperCase()==="B" || x==="0"){adminPageSelect();return}
+ if(x.startsWith("text=")){let a=x.slice(5).split("="),i=+a.shift();if(b.pages[i])b.pages[i].text=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("image=")){let a=x.slice(6).split("="),i=+a.shift();if(b.pages[i])b.pages[i].image=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("caption=")){let a=x.slice(8).split("="),i=+a.shift();if(b.pages[i])b.pages[i].caption=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|");b.pages.push({text:v[0]||"",image:v[1]||"",caption:v[2]||""});saveData();adminPages();return}
+ if(x.startsWith("del=")){b.pages.splice(+x.slice(4),1);saveData();adminPages();return}
+ adminPages();
+}
+
+function adminVisibility(){
+ state="adminVisibility";
+ let s="========== 权限与可见性 ==========\n\n";
+ DATA.sections.forEach((sct,si)=>sct.books.forEach((b,bi)=>{
+  s+="["+si+","+bi+"] "+b.name+"\n  ";
+  s+=b.visibleTo.map(id=>DATA.passes.find(p=>p.id===id)?.name||id).join("、")||"无人";
+  s+="\n";
+ }));
+ s+="\n设置可见者：show=分区,书目|内部ID,内部ID\n全部隐藏：hide=分区,书目\n全部开放：all=分区,书目\n\n[B] 返回";
+ show(s);
+}
+function adminVisibilityChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x.startsWith("show=")){let v=x.slice(5).split("|"),p=v.shift().split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=v.join("|").split(",").filter(Boolean);saveData();adminVisibility();return}
+ if(x.startsWith("hide=")){let p=x.slice(5).split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=[];saveData();adminVisibility();return}
+ if(x.startsWith("all=")){let p=x.slice(4).split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=DATA.passes.map(p=>p.id);saveData();adminVisibility();return}
+ adminVisibility();
+}
+
+function adminData(){
+ state="adminData";
+ show("========== 数据 ==========\n\n"+
+ "[1] 导出 JSON 备份\n[2] 导入 JSON 备份\n[3] 导出当前网站\n[4] 恢复默认数据\n[B] 返回\n\n>"+
+ "\n\n所有内容当前保存在此浏览器的 localStorage 中。",[
+ ["导出","1"],["导入","2"],["恢复默认","3"]
+ ]);
+}
+function adminDataChoice(x){
+ if(x==="0"){adminHome();return}
+ if(x==="1"){downloadData();adminData();return}
+ if(x==="2"){importData();return}
+ if(x==="3"){downloadWebsite();return}
+ if(x==="4"){if(confirm("确定恢复默认数据？")){DATA=clone(DEFAULT_DATA);saveData();startStory()}else adminData();return}
+ adminData();
+}
+
+function exportWebsite(){
+  const cloneDoc=document.documentElement.cloneNode(true);
+  const script=cloneDoc.querySelector("script");
+  if(script){
+    // Embed the current edited DATA directly into the exported site's startup code.
+    const embedded="const EMBEDDED_DATA="+JSON.stringify(DATA)+";\n";
+    script.textContent=script.textContent.replace(
+      'const DEFAULT_DATA=',
+      embedded+'const DEFAULT_DATA='
+    ).replace(
+      'let DATA=loadData();',
+      'let DATA=loadData();\nif(typeof EMBEDDED_DATA!=="undefined"){DATA=clone(EMBEDDED_DATA);localStorage.setItem("wucaitan_v02",JSON.stringify(DATA));}'
+    );
+  }
+  const finalHtml="<!doctype html>\n"+cloneDoc.outerHTML;
+  const blob=new Blob([finalHtml],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="index.html";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+function downloadWebsite(){exportWebsite()}
+function downloadData(){
+ const blob=new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="wucaitan-library.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importData(){
+ const input=document.createElement("input");input.type="file";input.accept=".json,application/json";input.onchange=()=>{
+  const f=input.files?.[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{
+   try{const x=JSON.parse(r.result);if(!x.passes||!x.sections||!x.story)throw Error();DATA=x;saveData();adminHome()}catch(e){show("导入失败：文件格式不正确。\n\n[回车] 返回");state="adminData"}};
+  r.readAsText(f,"utf-8");
+ };input.click();
+}
+
+function handle(raw){
+ const x=String(raw??"").trim();
+ if(x.toUpperCase()==="B" && state.startsWith("admin") && state!=="admin"){
+  adminHome();
+  return;
+ }
+ if(state==="entrance"){
+  if(x==="libraryEnter"||x.toLowerCase()==="library"){libraryEnter();return}
+  if(x==="seaEnter"||x.toLowerCase()==="sea"){seaEnter();return}
+  if(x==="reverify"){reverify();return}
+  startStory();return;
+ }
+ if(state==="story"){chooseNode(x);return}
+ if(state==="intro"){
+  if(x==="1")verify();else if(x==="2")hint();else if(x.toLowerCase()==="r"){DATA=clone(DEFAULT_DATA);survey.foundByShelf={};saveFound();saveData();startStory()}else startIntroFallback();return;
+ }
+ if(state==="hint"){startStory();return}
+ if(state==="verify"){authenticate(x);return}
+ if(state==="verifyFail"){startStory();return}
+ if(state==="afterAuth"){if(x==="libraryEnter")library();else library();return}
+ if(state==="seaMenu"){seaChoice(x);return}
+ if(state==="seaDialog"){if(x==="nextSea")nextSea();else seaDialogue();return}
+ if(state==="library"){
+  if(x.toLowerCase()==="admin"&&isAdmin()){adminHome();return}
+  if(x.toLowerCase()==="sea"){seaDialogue();return}
+  if(x==="0"){startStory();return}
+  const s=DATA.sections[+x-1];if(s)showSection(s);else library();return;
+ }
+ if(state==="scene"){
+  if(x.toLowerCase()==="b"){library();return}
+  if(x.startsWith("shelf:")){beginShelfSurvey(x.slice(6));return}
+  if(x.startsWith("found:")){const f=visibleBooks(section).find(b=>b.id===x.slice(6));if(f){survey.returnToSurvey=false;openBook(f)}else showSection(section);return}
+  const shelves=DATA.shelves?.[section.id]||[];const sh=shelves[+x-1];if(sh)beginShelfSurvey(sh.id);else showSection(section);return;
+ }
+ if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
+ if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
+ if(state==="surveyResult"){
+  if(x==="surveyResultNext")surveyResultNext();else if(x==="openFound")openFound();else if(x==="repeatSurvey")repeatSurvey();else if(x==="leaveShelf")leaveShelf();return;
+ }
+ if(state==="book"){if(x.toLowerCase()==="q"){if(survey.returnToSurvey)returnFromFoundBook();else showSection(section)}else nextPage();return}
+ if(state==="admin")adminHomeChoice(x);
+ else if(state==="adminHomepage")adminHomepageChoice(x);
+ else if(state==="adminStory")adminStoryChoice(x);
+ else if(state==="adminPass")adminPassChoice(x);
+ else if(state==="adminSection")adminSectionChoice(x);
+ else if(state==="adminBook")adminBookChoice(x);
+ else if(state==="adminPageSelect")adminPageSelectChoice(x);
+ else if(state==="adminPage")adminPageChoice(x);
+ else if(state==="adminVisibility")adminVisibilityChoice(x);
+ else if(state==="adminData")adminDataChoice(x);
+ else startStory();
+}
+
+startStory();
+</script>
+</body>
+</html>
