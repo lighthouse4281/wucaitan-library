@@ -29,7 +29,7 @@ header{padding:8px 0 16px;border-bottom:1px solid #39433d;margin-bottom:18px}
 <main>
 <header>
  <div class="brand" id="brand">五彩滩图书馆</div>
- <div class="status" id="status">从现实到图书馆的入口 · 未确认身份</div>
+ <div class="status" id="status">从现实到图书馆的入口 · 无身份幽灵</div>
 </header>
 <pre id="out"></pre>
 <div class="controls">
@@ -49,7 +49,7 @@ const DEFAULT_DATA={
   "海：这里是五彩滩图书馆的一个入口",
   "海：这是第一个与现实链接的入口，请原谅我使用无趣的身份确认方式"
  ],
- hint:["海：这里有一条给某人的提示：","海：狐狸的生日"],
+ hint:["海：现实密文的线索当然藏在现实之中","海：如果还是有疑惑，可以询问给你邀请的人"],
  passes:[
   {id:"friend_jellyfish",code:"4281",name:"水母的朋友",admin:false},
   {id:"fox",code:"1212",name:"狐狸",admin:false},
@@ -98,7 +98,7 @@ const DEFAULT_DATA={
    reality:{speaker:"海",text:"这是五彩滩图书馆的一个入口。",choices:[{label:"继续",to:"identity"}]},
    identity:{speaker:"海",text:"这是第一个与现实链接的入口，请原谅我使用无聊的身份确认方式。",choices:[
     {label:"输入现实密文",to:"verify"},
-    {label:"提示",to:"hint"}
+    {label:"线索",to:"hint"}
    ]}
   }
  }
@@ -204,9 +204,9 @@ function seaChoice(x){
  let lines=[];
  if(x==="1"){
   if(id==="fox") lines=["海：你好，尊敬的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"];
-  else lines=["海：这里是五彩滩图书馆","海：我是海，如你所见","海就这样站着"];
+  else lines=["海：这里是五彩滩图书馆，当然，只是一部分","海：我是海，如你所见","海：虽然还未完全完工，不过祝你在这里过得愉快"];
  }else if(x==="2"){
-  if(id==="friend_jellyfish") lines=["海说了一些数字之类"];
+  if(id==="friend_jellyfish") lines=["海：诚挚欢迎莅临"];
   else if(id==="fox"||id==="lighthouse_jellyfish") lines=["海：请放心，我不会对你说那些话"];
   else lines=["海：……","海没有回答"];
  }
@@ -222,7 +222,7 @@ function verify(){state="verify";show("请输入现实密文：\n\n如果你是�
 function hint(){state="hint";show(DATA.hint.join("\n")+"\n\n[回车] 返回");}
 function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
- if(!p){state="verifyFail";show("海：非常抱歉……\n\n这串密文没有效果。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
+ if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
  pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
  show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
@@ -232,7 +232,7 @@ function library(){
  DATA.sections.forEach((x,i)=>s+="["+(i+1)+"] "+x.name+"\n");
  s+="\n[sea] 海";
  s+="\n[0] 返回入口";
- if(pass?.admin)s+="\n[admin] 灯塔水母编辑室";
+ if(pass?.admin)s+="\n[admin] 猫的编辑室";
  show(s,DATA.sections.map((x,i)=>[(i+1)+". "+x.name,String(i+1)]).concat([["海","sea"],pass?.admin?["编辑室","admin"]:null].filter(Boolean)));
 }
 function visibleBooks(sec){
@@ -280,7 +280,7 @@ function showShelfLine(){
  const i=survey.dialogIndex,lines=survey.dialogLines||[];
  if(i<lines.length){show(lines[i],[["继续","shelfNext"]]);return}
  state="surveyChoice";
- show("你看着书架。\n\n要仔细调查吗？",[["调查","doSurvey"],["离开","leaveShelf"]]);
+ show("书架。\n\n要寻找书吗？",[["寻找","doSurvey"],["离开","leaveShelf"]]);
 }
 function shelfNext(){survey.dialogIndex++;showShelfLine()}
 function makePlaceholderPool(){
