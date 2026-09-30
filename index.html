@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0e1317">
+<meta name="theme-color" content="#f5f5dc">
 <title>五彩滩图书馆</title>
 <style>
 *{box-sizing:border-box}
@@ -237,7 +237,7 @@ function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
  if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[回车] 返回",[["返回","backEntrance"]]);return}
  pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
- show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+ show("海：你好，"+p.name+"。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
 function library(){
  state="library";setStatus();
@@ -271,7 +271,7 @@ function showSection(sec){
  }else{
   s+="这里的书架都是空的。\n";
  }
- s+="\n[0] 返回图书馆";
+ s+="\n[B] 返回图书馆";
  const bs=[];shelves.forEach((sh,i)=>{bs.push([(i+1)+". "+sh.name,"shelf:"+sh.id]);foundBooksForShelf(sh.id).forEach(b=>bs.push(["查看《"+b.name+"》","found:"+b.id]))});
  bs.push(["返回","0"]);
  show(s,bs);
