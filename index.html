@@ -29,7 +29,7 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
 <main>
 <header>
  <div class="brand" id="brand">五彩滩图书馆</div>
- <div class="status" id="status">从现实到图书馆的入口 · 无身份幽灵</div>
+ <div class="status" id="status">从现实到图书馆的入口 · 幽灵</div>
 </header>
 <pre id="out"></pre>
 <div class="controls">
@@ -281,7 +281,7 @@ function library(){
  DATA.sections.forEach((x,i)=>s+="["+(i+1)+"] "+x.name+"\n");
  s+="\n[sea] 海";
  s+="\n[0] 返回入口";
- if(pass?.admin)s+="\n[admin] 猫的编辑室";
+ if(pass?.admin)s+="\n[admin] 猫的房间";
  show(s,DATA.sections.map((x,i)=>[(i+1)+". "+x.name,String(i+1)]).concat([["海","sea"],pass?.admin?["编辑室","admin"]:null].filter(Boolean)));
 }
 function visibleBooks(sec){
@@ -305,7 +305,7 @@ function showSection(sec){
  if(shelves.length){
   shelves.forEach((sh,i)=>{s+="["+(i+1)+"] "+sh.name+"\n";const found=foundBooksForShelf(sh.id);found.forEach(b=>s+="    · "+b.name+"\n")});
  }else{
-  s+="这里的书架都是空的。\n";
+  s+="这里是空的。\n";
  }
  s+="\n[0] 返回图书馆";
  const bs=[];shelves.forEach((sh,i)=>{bs.push([(i+1)+". "+sh.name,"shelf:"+sh.id]);foundBooksForShelf(sh.id).forEach(b=>bs.push(["查看《"+b.name+"》","found:"+b.id]))});
@@ -362,7 +362,7 @@ function doSurvey(){
 function showCurrentResult(){
  const item=survey.results?.[survey.resultIndex];
  if(!item){
-  show("仔细寻找了一遍，没有发现什么。",[["继续寻找","repeatSurvey"],["离开","leaveShelf"]]);return;
+  show("仔细寻找了一遍，没有发现什么有趣的书。",[["继续寻找","repeatSurvey"],["离开","leaveShelf"]]);return;
  }
  if(item.kind==="book")markFound(shelfById(survey.shelf),item.book);
  const title=item.kind==="book"?item.book.name:item.name;
