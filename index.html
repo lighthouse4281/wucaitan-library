@@ -6,7 +6,7 @@
 <title>五彩滩图书馆</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background-color:#2a1a11;background-image:var(--library-bg-image,radial-gradient(circle at 50% 0%,#cdb38d 0%,#9a7652 25%,#62452f 57%,#2a1a11 100%));background-size:cover;background-position:center;background-attachment:fixed;color:#f2e7d4;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
+body{margin:0;background-color:#ead9b9;background-image:var(--library-bg-image,radial-gradient(circle at 50% 0%,#cdb38d 0%,#9a7652 25%,#62452f 57%,#2a1a11 100%));background-size:cover;background-position:center;background-attachment:fixed;color:#3b2a1d;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
 main{width:min(920px,100%);margin:auto;min-height:100vh;padding:18px 16px 30px;display:flex;flex-direction:column}
 header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-bottom:18px}
 .brand{font-size:20px;letter-spacing:.12em}
@@ -58,7 +58,7 @@ const DEFAULT_DATA={
  dataVersion:"warm_event_1_fixed_export_v2",
  themeColor:"#82cdd0",
  variables:{met_naturalist:0},
- backgroundImage:"https://www.publicdomainpictures.net/pictures/470000/nahled/altes-papier-pergament-hintergrund-16602085209L8.jpg",
+ backgroundImage:"data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="900" height="1200"%3E%3Crect width="100%25" height="100%25" fill="%23ead9b9"/%3E%3Cg opacity=".18" fill="%23a88960"%3E%3Ccircle cx="80" cy="120" r="45"/%3E%3Ccircle cx="600" cy="300" r="70"/%3E%3Ccircle cx="300" cy="900" r="55"/%3E%3C/g%3E%3C/svg%3E",
  display:{
   typewriter:{
    entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
@@ -831,32 +831,25 @@ function adminDataChoice(x){
 }
 
 function exportWebsite(){
- // 使用当前完整数据生成独立文件，避免导出时带入浏览器临时界面状态
+ // 生成真正独立版本：不复制当前管理页面状态，不读取旧缓存
  const source=document.documentElement.outerHTML;
  const wrapper=document.createElement("html");
  wrapper.innerHTML=source;
  const script=wrapper.querySelector("script");
- if(!script){show("导出失败：未找到脚本。");return;}
+ if(!script){show("导出失败：脚本不存在");return;}
  let js=script.textContent;
- const embedded="const EMBEDDED_DATA="+JSON.stringify(clone(DATA))+";\nconst USE_EMBEDDED_DATA=true;";
- const pattern=/const EMBEDDED_DATA=[\s\S]*?;\nconst USE_EMBEDDED_DATA=[^;]+;/;
- if(pattern.test(js)){
-  js=js.replace(pattern,embedded);
- }else{
-  js=embedded+"\n"+js;
- }
+ const embedded="const EMBEDDED_DATA="+JSON.stringify(clone(DATA))+";\\nconst USE_EMBEDDED_DATA=true;";
+ js=js.replace(/const EMBEDDED_DATA=[\\s\\S]*?;\\nconst USE_EMBEDDED_DATA=[^;]+;/,embedded);
  script.textContent=js;
- // 清除可能导致误判的临时输入状态
  const outNode=wrapper.querySelector("#out");
- if(outNode)outNode.textContent="正在进入五彩滩图书馆……";
- const finalHtml="<!doctype html>\n"+wrapper.outerHTML;
+ if(outNode) outNode.textContent="正在进入五彩滩图书馆……";
+ // 删除可能残留的输入内容
+ const cmd=wrapper.querySelector("#cmd");
+ if(cmd) cmd.value="";
+ const finalHtml="<!doctype html>"+wrapper.outerHTML;
  const blob=new Blob([finalHtml],{type:"text/html;charset=utf-8"});
- const a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="五彩滩图书馆_独立版_index.html";
- document.body.appendChild(a);
- a.click();
- setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="五彩滩图书馆_独立新版_index.html";a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 function downloadWebsite(){exportWebsite()}
 function downloadData(){
