@@ -6,7 +6,7 @@
 <title>五彩滩图书馆</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at 50% 0%,#cdb38d 0%,#9a7652 25%,#62452f 57%,#2a1a11 100%);color:#f2e7d4;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
+body{margin:0;background-color:#2a1a11;background-image:var(--library-bg-image,radial-gradient(circle at 50% 0%,#cdb38d 0%,#9a7652 25%,#62452f 57%,#2a1a11 100%));background-size:cover;background-position:center;background-attachment:fixed;color:#f2e7d4;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
 main{width:min(920px,100%);margin:auto;min-height:100vh;padding:18px 16px 30px;display:flex;flex-direction:column}
 header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-bottom:18px}
 .brand{font-size:20px;letter-spacing:.12em}
@@ -56,12 +56,14 @@ const USE_EMBEDDED_DATA=false;
 const DEFAULT_DATA={
  title:"五彩滩图书馆",
  themeColor:"#82cdd0",
+ variables:{met_naturalist:0},
+ backgroundImage:"https://www.publicdomainpictures.net/pictures/470000/nahled/altes-papier-pergament-hintergrund-16602085209L8.jpg",
  display:{
   typewriter:{
    entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
    surveyChoice:true,surveyResult:true,book:true,library:false,scene:true,windowIntro:true,windowNear:true,windowDetail:true,
    admin:false,adminHomepage:false,adminStory:false,adminPass:false,adminSection:false,
-   adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false
+   adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false,adminBackground:false
   }
  },
  homeLines:[
@@ -116,7 +118,7 @@ const DEFAULT_DATA={
   lighthouse_jellyfish:["站在书架前。"]
  }, 
  scenePoints:{
-  section_a:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}],
+  section_a:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},{id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}],
   section_b:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}]
  },
  story:{
@@ -133,7 +135,7 @@ const DEFAULT_DATA={
 };
 
 let DATA=loadData();
-
+if(!DATA.variables)DATA.variables={};\nif(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;\nif(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});\n
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
 DATA.sections.forEach(sec=>{if(!Array.isArray(sec.visibleTo))sec.visibleTo=DATA.passes.map(p=>p.id)});
@@ -147,6 +149,7 @@ if(picnicDefault&&currentStorySection&&!currentStorySection.books.some(x=>x.id==
 if(!DATA.scenePoints.section_a)DATA.scenePoints.section_a=clone(DEFAULT_DATA.scenePoints.section_a);
 if(!DATA.scenePoints.section_b)DATA.scenePoints.section_b=clone(DEFAULT_DATA.scenePoints.section_b);
 if(!DATA.shelfDialogues)DATA.shelfDialogues=clone(DEFAULT_DATA.shelfDialogues);
+if(!DATA.backgroundImage)DATA.backgroundImage=DEFAULT_DATA.backgroundImage||"";
 if(!DATA.display)DATA.display=clone(DEFAULT_DATA.display);
 if(!DATA.display.typewriter)DATA.display.typewriter=clone(DEFAULT_DATA.display.typewriter);
 Object.keys(DEFAULT_DATA.display.typewriter).forEach(k=>{if(typeof DATA.display.typewriter[k]!=="boolean")DATA.display.typewriter[k]=DEFAULT_DATA.display.typewriter[k]});
@@ -157,6 +160,7 @@ try{survey.foundByShelf=JSON.parse(localStorage.getItem("wucaitan_v04_found")||"
 const out=document.getElementById("out"),cmd=document.getElementById("cmd"),brand=document.getElementById("brand"),status=document.getElementById("status"),quick=document.getElementById("quick");
 let typingTimer=null,typingActive=false,typingTarget="",typingIndex=0,typingButtons=[];
 applyThemeColor();
+applyBackgroundImage();
 
 function clone(x){return JSON.parse(JSON.stringify(x))}
 function loadData(){
@@ -206,6 +210,7 @@ function setStatus(){
  brand.textContent=DATA.title;
  status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
  applyThemeColor();
+ applyBackgroundImage();
 }
 function validColor(v){
  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(v||"").trim());
@@ -215,6 +220,15 @@ function applyThemeColor(){
  document.documentElement.style.setProperty("--theme-color",c);
  const meta=document.querySelector('meta[name="theme-color"]');
  if(meta)meta.setAttribute("content","#2a1a11");
+}
+function applyBackgroundImage(){
+ const raw=String(DATA.backgroundImage||"").trim();
+ if(raw){
+  const safe=raw.replace(/\\/g,"\\\\").replace(/"/g,'\\"');
+  document.documentElement.style.setProperty("--library-bg-image",'linear-gradient(rgba(42,26,17,.42),rgba(42,26,17,.52)),url("'+safe+'")');
+ }else{
+  document.documentElement.style.removeProperty("--library-bg-image");
+ }
 }
 function buttons(items){
  quick.innerHTML="";
@@ -356,10 +370,42 @@ function visibleShelfBooks(sh){
 }
 function openScenePoint(id){
  const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
- if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
- if(pt.type==="desk"){deskStart();return}
+ if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}\n if(pt.type==="naturalistTable"){openNaturalist();return}
  showSection(section);
 }
+
+function openNaturalist(){
+ if(DATA.variables.met_naturalist===1){
+  state="naturalistAfter";
+  show("博物学家：有什么事吗？",[["再见","naturalistBack"]]);
+  return;
+ }
+ state="naturalist";
+ show("桌子上堆着许多书",[["走近","naturalistNear"]]);
+}
+function openNaturalistNear(){
+ state="naturalist";
+ show("走近一看，一只兔子正坐在书堆后的椅子上。\n它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情地看着你。\n\n博物学家：你好\n博物学家：我是博物学家，你就是从现实来的客人吗？",
+ [["可能","naturalistKnown"],["是的","naturalistYes"]]);
+}
+function naturalistKnown(){
+ state="naturalist";
+ show("博物学家：哦，我认识你，你是那位"+(pass?pass.name:"客人")+"！无论如何，谢谢你能来这里做客。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！这里的书都是我写的。\n\n博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧。",
+ [["继续","naturalistEnd"]]);
+}
+function naturalistYes(){
+ state="naturalist";
+ show("博物学家：哦，真好，我终于见到现实的人们了。\n\n博物学家：这里都是为从现实来的客人专门写的书。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！如果你愿意，请读读看吧。",
+ [["继续","naturalistEnd"]]);
+}
+function naturalistEnd(){
+ DATA.variables.met_naturalist=1;saveData();
+ state="naturalist";
+ show("博物学家：我真想好好听听你的事。\n\n博物学家：毕竟对我来说，得知"+(pass?pass.name:"客人")+"的经历的机会，可是很难得的。\n\n博物学家：可惜，我还有重要的事情没有做。",
+ [["再见","naturalistBack"]]);
+}
+function naturalistBack(){showSection(section);}
+
 function windowLeave(){showSection(section)}
 function windowNear(){state="windowNear";show("就像现实，远处林立着形形色色的楼",[["离开","windowLeave"],["细看","windowDetail"]])}
 function windowDetail(){
@@ -367,18 +413,6 @@ function windowDetail(){
  const lines=["一座白色的高楼上，有细微的红点闪烁，就像停机坪，但你很清楚那不是","密密麻麻的光点，只是在那里，让人分不清是飞机，星星，灯中的哪种","模糊的广阔\n人类虽然没有合议，却创造出了这样的奇观，真是奇迹。"];
  show(lines[Math.floor(Math.random()*lines.length)],[["返回","B"]]);
 }
-
-function deskStart(){
- if(getVar("met_naturalist")){state="deskDone";show("博物学家：有什么事吗？",[["再见","B"]]);return}
- state="deskIntro";show("桌子上堆着许多书",[["走近","deskNear"]]);
-}
-function deskNear(){state="deskTalk";show("走近一看，一只兔子正坐在书堆后的椅子上，\n它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情的看着你",[["继续","deskHello"]]);}
-function deskHello(){show("博物学家：你好\n博物学家：我是博物学家，你就是从现实来的客人吗？",[["可能","deskMaybe"],["是的","deskYes"]]);}
-function deskMaybe(){show("博物学家：哦，我认识你，你是那位"+(pass?pass.name:"")+"！无论如何，谢谢你能来这里做客\n博物学家：为了理解现实人们的视角，我花了好多时间…不过终于完成了一些！这里的书都是我写的\n博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧",[["继续","deskEnd"]]);}
-function deskYes(){show("博物学家：哦，真好，我终于见到现实的人们了\n博物学家：这里都是为从现实来的客人专门写的书。\n博物学家：为了理解现实人们的视角，我花了好多时间…不过终于完成了一些！如果你愿意，请读读看吧。",[["继续","deskEnd"]]);}
-function deskEnd(){show("博物学家：我真想好好听听你的事\n博物学家：毕竟对我来说，得知"+(pass?pass.name:"")+"的经历的机会，可是很难得的\n博物学家：可惜，我还有重要的事情没有做",[["再见","deskFinish"]]);}
-function deskFinish(){setVar("met_naturalist",1);showSection(section);}
-
 function beginShelfSurvey(id){
  const sh=shelfById(id);if(!sh){showSection(section);return}
  survey.shelf=id;survey.dialogIndex=0;survey.resultIndex=0;survey.results=[];
@@ -472,8 +506,8 @@ function adminHome(){
  state="admin";
  show("================================\n        灯塔水母 · 编辑室\n================================\n\n"+
  "这里是五彩滩图书馆的内容管理区域。\n\n"+
- "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[9] 主题颜色\n[10] 文字显示\n[B] 返回图书馆\n\n>",
- [["主页","1"],["剧情","2"],["通行证","3"],["分区","4"],["书目","5"],["书页","6"],["权限","7"],["数据","8"],["主题颜色","9"],["文字显示","10"]]);
+ "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[9] 主题颜色\n[10] 背景图片\n[11] 文字显示\n[B] 返回图书馆\n\n>",
+ [["主页","1"],["剧情","2"],["通行证","3"],["分区","4"],["书目","5"],["书页","6"],["权限","7"],["数据","8"],["主题颜色","9"],["背景图片","10"],["文字显示","11"]]);
 }
 function adminHomeChoice(x){
  if(String(x).trim().toUpperCase()==="B"){library();return}
@@ -486,14 +520,36 @@ function adminHomeChoice(x){
  else if(x==="7")adminVisibility();
  else if(x==="8")adminData();
  else if(x==="9")adminTheme();
- else if(x==="10")adminTypewriter();
+ else if(x==="10")adminBackground();
+ else if(x==="11")adminTypewriter();
  else adminHome();
+}
+
+function adminBackground(){
+ state="adminBackground";
+ const bg=String(DATA.backgroundImage||"");
+ show("========== 背景图片 ==========\n\n"+
+      "当前背景："+(bg||"未设置")+"\n\n"+
+      "设置图片：image=图片文件名或图片地址\n"+
+      "例如：image=book-page-bg.jpg\n\n"+
+      "清除背景：clear\n\n"+
+      "建议：把图片文件和 index.html 放在同一个 GitHub Pages 文件夹里，填写文件名即可。\n\n"+
+      "[B] 返回编辑室");
+}
+function adminBackgroundChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(String(x).trim().toLowerCase()==="clear"){DATA.backgroundImage="";saveData();applyBackgroundImage();adminBackground();return}
+ if(String(x).startsWith("image=")){
+  const v=String(x).slice(6).trim();
+  DATA.backgroundImage=v;saveData();applyBackgroundImage();adminBackground();return;
+ }
+ adminBackground();
 }
 
 function adminTypewriter(){
  state="adminTypewriter";
  const m=DATA.display?.typewriter||{};
- const labels={entrance:"入口",story:"剧情",intro:"旧式引入",seaDialog:"海的对话",shelfVN:"书架调查·人物对话",placeholder:"占位书对话",surveyChoice:"调查选择",surveyResult:"调查结果",book:"书页",library:"图书馆主页",scene:"分区场景",windowIntro:"窗·初见",windowNear:"窗·近看",windowDetail:"窗·细看",admin:"编辑室",adminHomepage:"主页编辑",adminStory:"剧情编辑",adminPass:"通行证编辑",adminSection:"分区编辑",adminBook:"书目编辑",adminPageSelect:"书页选择",adminPage:"书页编辑",adminVisibility:"权限编辑",adminData:"数据页",adminTheme:"主题颜色页"};
+ const labels={entrance:"入口",story:"剧情",intro:"旧式引入",seaDialog:"海的对话",shelfVN:"书架调查·人物对话",placeholder:"占位书对话",surveyChoice:"调查选择",surveyResult:"调查结果",book:"书页",library:"图书馆主页",scene:"分区场景",windowIntro:"窗·初见",windowNear:"窗·近看",windowDetail:"窗·细看",admin:"编辑室",adminHomepage:"主页编辑",adminStory:"剧情编辑",adminPass:"通行证编辑",adminSection:"分区编辑",adminBook:"书目编辑",adminPageSelect:"书页选择",adminPage:"书页编辑",adminVisibility:"权限编辑",adminData:"数据页",adminTheme:"主题颜色页",adminBackground:"背景图片页"};
  let s="========== 文字显示 ==========\n\n";
  Object.keys(labels).forEach((k,i)=>s+="["+(i+1)+"] "+labels[k]+"："+(m[k]===true?"开":"关")+"\n");
  s+="\n修改：set=页面状态|on/off\n例如：set=shelfVN|on\n也可以：set=seaDialog|off\n\n[B] 返回编辑室";
@@ -849,7 +905,6 @@ function handle(raw){
   startStory();return;
  }
  if(state==="story"){chooseNode(x);return}
- if(state.startsWith("desk")){ if(x!=="B"){ let f={deskNear:deskNear,deskHello:deskHello,deskMaybe:deskMaybe,deskYes:deskYes,deskEnd:deskEnd,deskFinish:deskFinish}; if(f[x])f[x](); } else showSection(section); return; }
  if(state==="intro"){
   if(x==="1")verify();else if(x==="2")hint();else if(x==="r"){resetLocalEdits()}else if(x==="R"){resetEverything()}else startIntroFallback();return;
  }
@@ -875,7 +930,7 @@ function handle(raw){
  if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
  if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
  if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
- if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
+ if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}\n if(state==="naturalistAfter"){naturalistBack();return}\n if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
  if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
  if(state==="placeholder"){if(x==="placeholderNext")placeholderNext();else if(x==="placeholderDone")placeholderDone();else showPlaceholderLine();return}
  if(state==="surveyResult"){
@@ -893,6 +948,7 @@ function handle(raw){
  else if(state==="adminVisibility")adminVisibilityChoice(x);
  else if(state==="adminData")adminDataChoice(x);
  else if(state==="adminTheme")adminThemeChoice(x);
+ else if(state==="adminBackground")adminBackgroundChoice(x);
  else if(state==="adminTypewriter")adminTypewriterChoice(x);
  else startStory();
 }
