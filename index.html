@@ -26,9 +26,15 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
 </head>
 <body>
 <main>
-<header><div class="brand">五彩滩图书馆</div></header>
+<header>
+<div class="brand" id="brand">五彩滩图书馆</div>
+<div class="status" id="status"></div>
+</header>
 <div id="out"></div>
-<div class="controls"><div class="inputrow"><input id="cmd" autocomplete="off"><button id="send">输入</button></div></div>
+<div class="controls">
+<div class="inputrow"><input id="cmd" autocomplete="off"><button id="send">输入</button></div>
+<div class="quick" id="quick"></div>
+</div>
 <script>
 const DEFAULT_DATA={
  title:"五彩滩图书馆",
@@ -187,8 +193,8 @@ function renderWithTypewriter(text,btns=[]){
 }
 
 function setStatus(){
- brand.textContent=DATA.title;
- status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
+ if(brand)brand.textContent=DATA.title;
+ if(status)status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
  applyThemeColor();
  applyBackgroundImage();
 }
