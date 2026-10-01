@@ -55,7 +55,7 @@ const EMBEDDED_DATA=null;
 const USE_EMBEDDED_DATA=false;
 const DEFAULT_DATA={
  title:"五彩滩图书馆",
- dataVersion:"warm_event_1",
+ dataVersion:"warm_event_1_fixed_export_v2",
  themeColor:"#82cdd0",
  variables:{met_naturalist:0},
  backgroundImage:"https://www.publicdomainpictures.net/pictures/470000/nahled/altes-papier-pergament-hintergrund-16602085209L8.jpg",
@@ -135,7 +135,7 @@ const DEFAULT_DATA={
  }
 };
 
-let DATA=loadData(); DATA.dataVersion="warm_event_1";
+let DATA=loadData(); DATA.dataVersion="warm_event_1_fixed_export_v2";
 if(!DATA.variables)DATA.variables={};\nif(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;\nif(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});\n
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
@@ -155,8 +155,8 @@ if(!DATA.display)DATA.display=clone(DEFAULT_DATA.display);
 if(!DATA.display.typewriter)DATA.display.typewriter=clone(DEFAULT_DATA.display.typewriter);
 Object.keys(DEFAULT_DATA.display.typewriter).forEach(k=>{if(typeof DATA.display.typewriter[k]!=="boolean")DATA.display.typewriter[k]=DEFAULT_DATA.display.typewriter[k]});
 let state="entrance", currentNode=DATA.story.start, pass=null, section=null, book=null, page=0, edit={}, survey={shelf:null,attempts:{},dialogLines:[],dialogIndex:0,results:[],resultIndex:0,foundByShelf:{}};
-try{const savedPassId=localStorage.getItem("wucaitan_v04_pass");if(savedPassId){pass=DATA.passes.find(p=>p.id===savedPassId)||null}}catch(e){}
-try{survey.foundByShelf=JSON.parse(localStorage.getItem("wucaitan_v04_found")||"{}")}catch(e){survey.foundByShelf={}}
+try{const savedPassId=localStorage.getItem("wucaitan_v05_pass");if(savedPassId){pass=DATA.passes.find(p=>p.id===savedPassId)||null}}catch(e){}
+try{survey.foundByShelf=JSON.parse(localStorage.getItem("wucaitan_v05_found")||"{}")}catch(e){survey.foundByShelf={}}
 
 const out=document.getElementById("out"),cmd=document.getElementById("cmd"),brand=document.getElementById("brand"),status=document.getElementById("status"),quick=document.getElementById("quick");
 let typingTimer=null,typingActive=false,typingTarget="",typingIndex=0,typingButtons=[];
@@ -167,12 +167,12 @@ function clone(x){return JSON.parse(JSON.stringify(x))}
 function loadData(){
  try{
   if(USE_EMBEDDED_DATA && EMBEDDED_DATA){return clone(EMBEDDED_DATA);}
-  const x=JSON.parse(localStorage.getItem("wucaitan_v02"));
-  if(x&&x.dataVersion==="warm_event_1"&&Array.isArray(x.passes)&&Array.isArray(x.sections)&&x.story)return x;
+  const x=JSON.parse(localStorage.getItem("wucaitan_v05"));
+  if(x&&x.dataVersion==="warm_event_1_fixed_export_v2"&&Array.isArray(x.passes)&&Array.isArray(x.sections)&&x.story)return x;
  }catch(e){}
  return clone(DEFAULT_DATA);
 }
-function saveData(){DATA.dataVersion="warm_event_1";localStorage.setItem("wucaitan_v02",JSON.stringify(DATA))}
+function saveData(){DATA.dataVersion="warm_event_1_fixed_export_v2";localStorage.setItem("wucaitan_v05",JSON.stringify(DATA))}
 function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function render(text){
  out.textContent=text;
@@ -322,7 +322,7 @@ function hint(){state="hint";show(DATA.hint.join("\n")+"\n\n[B] 返回");}
 function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
  if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[B] 返回",[["返回","backEntrance"]]);return}
- pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
+ pass=p;try{localStorage.setItem("wucaitan_v05_pass",p.id)}catch(e){}setStatus();state="afterAuth";
  show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
 function canSee(item){return !!pass?.admin || !Array.isArray(item?.visibleTo) || item.visibleTo.includes(pass?.id)}
@@ -339,7 +339,7 @@ function library(){
 function visibleBooks(sec){
  return sec.books.filter(b=>b.visibleTo.includes(pass?.id)||pass?.admin);
 }
-function saveFound(){try{localStorage.setItem("wucaitan_v04_found",JSON.stringify(survey.foundByShelf||{}))}catch(e){}}
+function saveFound(){try{localStorage.setItem("wucaitan_v05_found",JSON.stringify(survey.foundByShelf||{}))}catch(e){}}
 function foundBooksForShelf(id){
  const ids=survey.foundByShelf?.[id]||[];
  return ids.map(bid=>visibleBooks(section).find(b=>b.id===bid)).filter(Boolean);
@@ -831,25 +831,29 @@ function adminDataChoice(x){
 }
 
 function exportWebsite(){
- const cloneDoc=document.documentElement.cloneNode(true);
- const script=cloneDoc.querySelector("script");
- if(!script)return;
+ // 使用当前完整数据生成独立文件，避免导出时带入浏览器临时界面状态
+ const source=document.documentElement.outerHTML;
+ const wrapper=document.createElement("html");
+ wrapper.innerHTML=source;
+ const script=wrapper.querySelector("script");
+ if(!script){show("导出失败：未找到脚本。");return;}
  let js=script.textContent;
- const embedded="const EMBEDDED_DATA="+JSON.stringify(DATA)+";\nconst USE_EMBEDDED_DATA=true;";
- const marker='const EMBEDDED_DATA=null;\nconst USE_EMBEDDED_DATA=false;';
- if(js.includes(marker)){
-  js=js.replace(marker,embedded);
+ const embedded="const EMBEDDED_DATA="+JSON.stringify(clone(DATA))+";\nconst USE_EMBEDDED_DATA=true;";
+ const pattern=/const EMBEDDED_DATA=[\s\S]*?;\nconst USE_EMBEDDED_DATA=[^;]+;/;
+ if(pattern.test(js)){
+  js=js.replace(pattern,embedded);
  }else{
-  const existing=/const EMBEDDED_DATA=[\s\S]*?;\nconst USE_EMBEDDED_DATA=[^;]+;/;
-  if(existing.test(js))js=js.replace(existing,embedded);
-  else js=embedded+"\n"+js;
+  js=embedded+"\n"+js;
  }
  script.textContent=js;
- const finalHtml="<!doctype html>\n"+cloneDoc.outerHTML;
+ // 清除可能导致误判的临时输入状态
+ const outNode=wrapper.querySelector("#out");
+ if(outNode)outNode.textContent="正在进入五彩滩图书馆……";
+ const finalHtml="<!doctype html>\n"+wrapper.outerHTML;
  const blob=new Blob([finalHtml],{type:"text/html;charset=utf-8"});
  const a=document.createElement("a");
  a.href=URL.createObjectURL(blob);
- a.download="index.html";
+ a.download="五彩滩图书馆_独立版_index.html";
  document.body.appendChild(a);
  a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
@@ -869,7 +873,7 @@ function importData(){
 }
 
 function resetLocalEdits(){
- try{localStorage.removeItem("wucaitan_v02")}catch(e){}
+ try{localStorage.removeItem("wucaitan_v05")}catch(e){}
  DATA=clone(DEFAULT_DATA);
  survey.foundByShelf={};
  saveFound();
@@ -880,9 +884,9 @@ function resetLocalEdits(){
 function resetEverything(){
  stopTyping();
  try{
-  localStorage.removeItem("wucaitan_v02");
-  localStorage.removeItem("wucaitan_v04_pass");
-  localStorage.removeItem("wucaitan_v04_found");
+  localStorage.removeItem("wucaitan_v05");
+  localStorage.removeItem("wucaitan_v05_pass");
+  localStorage.removeItem("wucaitan_v05_found");
  }catch(e){}
  DATA=clone(DEFAULT_DATA);
  pass=null;section=null;book=null;page=0;
