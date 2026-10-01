@@ -321,7 +321,7 @@ function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
  if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[B] 返回",[["返回","backEntrance"]]);return}
  pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
- show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+ show("海：你好，"+p.name+"。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
 function canSee(item){return !!pass?.admin || !Array.isArray(item?.visibleTo) || item.visibleTo.includes(pass?.id)}
 function visibleSections(){return DATA.sections.filter(canSee)}
