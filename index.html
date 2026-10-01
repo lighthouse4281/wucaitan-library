@@ -112,7 +112,10 @@ const DEFAULT_DATA={
 };
 
 let DATA=loadData();
-if(!DATA.variables)DATA.variables={};\nif(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;\nif(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});\n
+if(!DATA.variables)DATA.variables={};
+if(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;
+if(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});
+
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
 DATA.sections.forEach(sec=>{if(!Array.isArray(sec.visibleTo))sec.visibleTo=DATA.passes.map(p=>p.id)});
@@ -214,7 +217,10 @@ function buttons(items){
   quick.appendChild(b);
  });
 }
-function show(s,btns=[]){renderWithTypewriter(s,btns);}
+function show(s,btns=[]){
+ const text = String(s ?? "");
+ renderWithTypewriter(text,btns);
+}
 function submit(){handle(cmd.value);cmd.value="";}
 document.getElementById("send").onclick=submit;
 cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(typingActive){finishTyping();return}submit()}});
@@ -347,7 +353,8 @@ function visibleShelfBooks(sh){
 }
 function openScenePoint(id){
  const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
- if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}\n if(pt.type==="naturalistTable"){openNaturalist();return}
+ if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
+ if(pt.type==="naturalistTable"){openNaturalist();return}
  showSection(section);
 }
 
@@ -906,7 +913,9 @@ function handle(raw){
  if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
  if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
  if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
- if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}\n if(state==="naturalistAfter"){naturalistBack();return}\n if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
+ if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}
+ if(state==="naturalistAfter"){naturalistBack();return}
+ if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
  if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
  if(state==="placeholder"){if(x==="placeholderNext")placeholderNext();else if(x==="placeholderDone")placeholderDone();else showPlaceholderLine();return}
  if(state==="surveyResult"){
@@ -932,14 +941,18 @@ function handle(raw){
 // 稳定启动：不恢复上一次页面状态，始终从入口开始
 function stableBoot(){
  stopTyping();
+ pass=null;
+ section=null;
+ book=null;
+ page=0;
  state="entrance";
- startStory();
+ if(typeof startStory==="function"){
+  startStory();
+ }else if(typeof show==="function"){
+  show("----------图书馆入口-----------\n海：欢迎\n这里是五彩滩图书馆的现实入口");
+ }
 }
 
 stableBoot();
-</script>
-
-
-
 </script>
 </main></body></html>
