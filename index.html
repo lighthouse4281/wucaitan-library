@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="zh-CN" style="--theme-color: #82cdd0;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2a1a11">
+<title>五彩滩图书馆</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% 0%,#cdb38d 0%,#9a7652 25%,#62452f 57%,#2a1a11 100%);color:#f2e7d4;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono",monospace}
+main{width:min(920px,100%);margin:auto;min-height:100vh;padding:18px 16px 30px;display:flex;flex-direction:column}
+header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-bottom:18px}
+.brand{font-size:20px;letter-spacing:.12em}
+.status{font-size:12px;color:#d4bea0;margin-top:5px}
+#out{white-space:pre-wrap;word-break:break-word;line-height:1.85;min-height:56vh}
+.controls{position:sticky;bottom:0;background:linear-gradient(transparent,#2a1a11 18%);padding-top:16px}
+.inputrow{display:flex;gap:8px}
+#cmd{min-width:0;flex:1;background:rgba(31,19,12,.82);color:#f7eddd;border:1px solid #85694b;border-radius:7px;padding:13px 12px;font:inherit;font-size:16px;outline:none}
+#cmd:focus{border-color:var(--theme-color,#82cdd0)}
+#send{background:#4a3222;color:#f0dfc6;border:1px solid #967654;border-radius:7px;padding:0 18px;font:inherit;min-width:70px}
+#send:active{background:#67472f}
+.quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.quick button{background:#4a3222;color:#ead8bd;border:1px solid #806246;border-radius:6px;padding:8px 10px;font:inherit}
+.notice{font-size:12px;color:#c8b092;margin-top:8px}
+.cyan{color:#e6c79a}.gold{color:#e3c982}.dim{color:#b89f81}.red{color:#df8585}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div class="brand" id="brand">五彩滩图书馆</div>
+ <div class="status" id="status">现实入口 · 灯塔水母</div>
+</header>
+<pre id="out">========== 数据 ==========
+
+[1] 导出 JSON 备份
+[2] 导入 JSON 备份
+[3] 导出当前网站
+[4] 恢复默认数据
+[B] 返回
+
+&gt;
+
+所有内容当前保存在此浏览器的 localStorage 中。</pre>
+<div class="controls">
+ <div class="inputrow">
+  <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入……">
+  <button id="send" type="button">确认</button>
+ </div>
+ <div class="quick" id="quick"><button>导出</button><button>导入</button><button>恢复默认</button></div>
+ 
+</div>
+</main>
+<script>
+const EMBEDDED_DATA={"title":"五彩滩图书馆","themeColor":"#82cdd0","display":{"typewriter":{"entrance":false,"story":true,"intro":true,"seaDialog":true,"shelfVN":true,"placeholder":true,"surveyChoice":false,"surveyResult":false,"book":false,"library":false,"scene":false,"admin":false,"adminHomepage":false,"adminStory":false,"adminPass":false,"adminSection":false,"adminBook":false,"adminPageSelect":false,"adminPage":false,"adminVisibility":false,"adminData":false,"adminTheme":false,"windowIntro":true,"windowNear":true,"windowDetail":true}},"homeLines":["海：欢迎","海：这里是五彩滩图书馆的一个入口","海：这是第一个与现实链接的入口，请原谅我使用无趣的身份确认方式"],"hint":["海：现实密文的线索当然藏在现实之中","海：如果还是有疑惑，可以询问给你邀请的人"],"passes":[{"id":"friend_jellyfish","code":"4281","name":"水母的朋友","admin":false},{"id":"fox","code":"1212","name":"狐狸","admin":false},{"id":"lighthouse_jellyfish","code":"真心","name":"灯塔水母","admin":true}],"sections":[{"id":"section_a","name":"“现实”区","description":"因现实入口特别设计的区域，存放着为从现实来的访客特供的书","books":[{"id":"book_tide","shelf":"a_window","name":"所有故事的故事","description":"","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"],"pages":[{"text":"第一页：所有故事的开始。","image":"","caption":""},{"text":"第二页：所有故事的结局。","image":"","caption":""}]},{"id":"book_fox","shelf":"a_high","name":"给狐狸","description":"","visibleTo":["fox","lighthouse_jellyfish"],"pages":[{"text":"这一页只对狐狸开放。","image":"","caption":""}]}],"visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]},{"id":"section_b","name":"故事区","description":"存放着故事，显然","books":[{"id":"book_admin","shelf":"b_narrow","name":"未命名档案","description":"","visibleTo":["lighthouse_jellyfish"],"pages":[{"text":"这是管理员专用示例书。","image":"","caption":""}]},{"id":"book_picnic","shelf":"b_unordered","name":"林间野餐","description":"","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"],"pages":[{"text":"在不知多久以前，鸟儿们还不会匆匆奔走的时候，有一只狐狸。它生活的地方和我们没什么两样，路上开着车子，河流装进了管道里，即使在最多风的日子里也没法放起风筝。\n每一天早上，它都和所有孩子一样，穿过马路，去到那高高的大房子里。大人们总是把他们分成一排又一排，让他们穿上硬邦邦的衣服，站到高高的或是矮矮的台子上。狐狸总是站在台子的最左边，吹着又大又沉的乐器，教他们演奏的先生是个从不说话的人，所以狐狸从不知道自己手里乐器的名字。一天又一天，狐狸都和别人一遍又一遍演奏，它的耳朵从来都分不清自己或别人吹出的音符，它听到的音乐沉闷又沉重，就像这座大房子一样。\n有一天中午，狐狸和往常一样，带着午餐坐到大树边的长椅上。它打开自己的午餐盒，里面装着三明治。狐狸最不喜欢三明治了。于是，它把三明治放在了树下，悄悄离开了。","image":"","caption":""},{"text":"第二天，狐狸收拾乐谱盒的时候，竟然在里面发现了一封信，上面边着的邮票歪歪扭扭，反面清楚写着“狐狸收”。狐狸拆开信，上面写着：\n亲爱的狐狸先生，\n您的三明治非常美味，谢谢您的慷慨。下一次，希望您能来加入我们的野餐。请不要忘记带上自己的餐具来。\n燕子\n致上\n\n一开始，狐狸一点儿也不相信。这怪不得我们的狐狸，毕竟坏孩子已经这样捉弄过它太多次了。那天它还是像以前一样，坐到公园树旁的长椅上。这一次，它把三明治放进了树洞里，头也不回地走了。结果第三天，它又在乐器盒里找到一封信，上面写着：\n亲爱的小狐狸\n谢谢你的三明治，但是它对我来说太大了。分享是很好的美德，春天也是野餐的好季节，希望你能认真考虑一下。\n松鼠 致上\n\n这下子，狐狸再也忍不住了。第四天，它整天守在自己的乐器盒边。到了中午，仍然没有坏孩子或是小动物拿着一封信出现。狐狸终于是没下心来，这一次，它决定尝一尝自己的三明治。\n就在它打开午餐盒的时候，两只飞快的鸟儿飞来，突然抓着它的乐器盒飞走了。狐狸立马追了上去，它越过公园的矮墙，跑到了深深的树林里。春天的森林里树影重重，树叶已经长得厚厚得了，一会儿过去，狐狸不但跟丢了鸟儿，还连路也找不到了。狐狸当然很着急，它在树林里走啊走，不知道怎样才能出去。它急得马上就要哭出来了。\n就在这个时候，一个奇妙的声音突然叫住它：\n“你在这儿！还有很多信是给你的呢……”\n狐狸就这样认识了邮差。","image":"","caption":""}]}],"visibleTo":["friend_jellyfish","fox"]},{"id":"section_c","name":"C区","description":"","books":[],"visibleTo":[]},{"id":"section_d","name":"D区","description":"","books":[],"visibleTo":[]}],"shelves":{"section_a":[{"id":"a_window","name":"靠窗的书架","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]},{"id":"a_high","name":"高处的书架","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]},{"id":"a_dust","name":"被灰尘覆盖的书架","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]}],"section_b":[{"id":"b_narrow","name":"狭窄的书架","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]},{"id":"b_unordered","name":"无人整理的书架","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]}],"section_c":[],"section_d":[]},"shelfDialogues":{"default":["站在书架前。"],"fox":["站在书架前。"],"friend_jellyfish":["站在书架前。"],"lighthouse_jellyfish":["站在书架前。"]},"story":{"start":"start","nodes":{"start":{"speaker":"海","text":"欢迎","choices":[{"label":"继续","to":"reality"}]},"reality":{"speaker":"海","text":"这是五彩滩图书馆的一个入口。","choices":[{"label":"继续","to":"identity"}]},"identity":{"speaker":"海","text":"这是第一个与现实链接的入口，请原谅我使用无聊的身份确认方式。","choices":[{"label":"输入现实密文","to":"verify"},{"label":"线索","to":"hint"}]}}},"scenePoints":{"section_a":[{"id":"window","name":"窗","type":"window","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]}],"section_b":[{"id":"window","name":"窗","type":"window","visibleTo":["friend_jellyfish","fox","lighthouse_jellyfish"]}]}};
+const DEFAULT_DATA={
+ title:"五彩滩图书馆",
+ themeColor:"#82cdd0",
+ display:{
+  typewriter:{
+   entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
+   surveyChoice:true,surveyResult:true,book:true,library:false,scene:true,windowIntro:true,windowNear:true,windowDetail:true,
+   admin:false,adminHomepage:false,adminStory:false,adminPass:false,adminSection:false,
+   adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false
+  }
+ },
+ homeLines:[
+  "海：欢迎",
+  "海：这里是五彩滩图书馆的一个入口",
+  "海：这是第一个与现实链接的入口，请原谅我使用无趣的身份确认方式"
+ ],
+ hint:["海：现实密文的线索当然藏在现实之中","海：如果还是有疑惑，可以询问给你邀请的人"],
+ passes:[
+  {id:"friend_jellyfish",code:"4281",name:"水母的朋友",admin:false},
+  {id:"fox",code:"1212",name:"狐狸",admin:false},
+  {id:"lighthouse_jellyfish",code:"真心",name:"灯塔水母",admin:true}
+ ],
+ sections:[
+  {id:"section_a",name:"A区",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
+   {id:"book_tide",shelf:"a_window",name:"所有故事的故事",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
+    {text:"第一页：所有故事的开始。",image:"",caption:""},
+    {text:"第二页：所有故事的结局。",image:"",caption:""}
+   ]},
+   {id:"book_fox",shelf:"a_high",name:"给狐狸",description:"",visibleTo:["fox","lighthouse_jellyfish"],pages:[
+    {text:"这一页只对狐狸开放。",image:"",caption:""}
+   ]}
+  ]},
+  {id:"section_b",name:"B区",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
+   {id:"book_admin",shelf:"b_narrow",name:"未命名档案",description:"",visibleTo:["lighthouse_jellyfish"],pages:[
+    {text:"这是管理员专用示例书。",image:"",caption:""}
+   ]},
+   {id:"book_picnic",shelf:"b_unordered",name:"林间野餐",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
+    {text:"在不知多久以前，鸟儿们还不会匆匆奔走的时候，有一只狐狸。它生活的地方和我们没什么两样，路上开着车子，河流装进了管道里，即使在最多风的日子里也没法放起风筝。\n每一天早上，它都和所有孩子一样，穿过马路，去到那高高的大房子里。大人们总是把他们分成一排又一排，让他们穿上硬邦邦的衣服，站到高高的或是矮矮的台子上。狐狸总是站在台子的最左边，吹着又大又沉的乐器，教他们演奏的先生是个从不说话的人，所以狐狸从不知道自己手里乐器的名字。一天又一天，狐狸都和别人一遍又一遍演奏，它的耳朵从来都分不清自己或别人吹出的音符，它听到的音乐沉闷又沉重，就像这座大房子一样。\n有一天中午，狐狸和往常一样，带着午餐坐到大树边的长椅上。它打开自己的午餐盒，里面装着三明治。狐狸最不喜欢三明治了。于是，它把三明治放在了树下，悄悄离开了。",image:"",caption:""},
+    {text:"第二天，狐狸收拾乐谱盒的时候，竟然在里面发现了一封信，上面边着的邮票歪歪扭扭，反面清楚写着“狐狸收”。狐狸拆开信，上面写着：\n亲爱的狐狸先生，\n您的三明治非常美味，谢谢您的慷慨。下一次，希望您能来加入我们的野餐。请不要忘记带上自己的餐具来。\n燕子\n致上\n\n一开始，狐狸一点儿也不相信。这怪不得我们的狐狸，毕竟坏孩子已经这样捉弄过它太多次了。那天它还是像以前一样，坐到公园树旁的长椅上。这一次，它把三明治放进了树洞里，头也不回地走了。结果第三天，它又在乐器盒里找到一封信，上面写着：\n亲爱的小狐狸\n谢谢你的三明治，但是它对我来说太大了。分享是很好的美德，春天也是野餐的好季节，希望你能认真考虑一下。\n松鼠 致上\n\n这下子，狐狸再也忍不住了。第四天，它整天守在自己的乐器盒边。到了中午，仍然没有坏孩子或是小动物拿着一封信出现。狐狸终于是没下心来，这一次，它决定尝一尝自己的三明治。\n就在它打开午餐盒的时候，两只飞快的鸟儿飞来，突然抓着它的乐器盒飞走了。狐狸立马追了上去，它越过公园的矮墙，跑到了深深的树林里。春天的森林里树影重重，树叶已经长得厚厚得了，一会儿过去，狐狸不但跟丢了鸟儿，还连路也找不到了。狐狸当然很着急，它在树林里走啊走，不知道怎样才能出去。它急得马上就要哭出来了。\n就在这个时候，一个奇妙的声音突然叫住它：\n“你在这儿！还有很多信是给你的呢……”\n狐狸就这样认识了邮差。",image:"",caption:""}
+   ]}
+  ]},
+  {id:"section_c",name:"C区",description:"",visibleTo:["lighthouse_jellyfish"],books:[]},
+  {id:"section_d",name:"D区",description:"",visibleTo:["lighthouse_jellyfish"],books:[]}
+ ],
+ shelves:{
+  section_a:[
+   {id:"a_window",name:"靠窗的书架",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},
+   {id:"a_high",name:"高处的书架",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},
+   {id:"a_dust",name:"被灰尘覆盖的书架",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}
+  ],
+  section_b:[
+   {id:"b_narrow",name:"狭窄的书架",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},
+   {id:"b_unordered",name:"无人整理的书架",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}
+  ],
+  section_c:[],section_d:[]
+ },
+ shelfDialogues:{
+  default:["站在书架前。"],
+  fox:["站在书架前。"],
+  friend_jellyfish:["站在书架前。"],
+  lighthouse_jellyfish:["站在书架前。"]
+ }, 
+ scenePoints:{
+  section_a:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}],
+  section_b:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}]
+ },
+ story:{
+  start:"start",
+  nodes:{
+   start:{speaker:"海",text:"欢迎",choices:[{label:"继续",to:"reality"}]},
+   reality:{speaker:"海",text:"这是五彩滩图书馆的一个入口。",choices:[{label:"继续",to:"identity"}]},
+   identity:{speaker:"海",text:"这是第一个与现实链接的入口，请原谅我使用无聊的身份确认方式。",choices:[
+    {label:"输入现实密文",to:"verify"},
+    {label:"线索",to:"hint"}
+   ]}
+  }
+ }
+};
+
+let DATA=loadData();
+try{
+  const hasSaved=localStorage.getItem("wucaitan_v02");
+  if(!hasSaved || !JSON.parse(hasSaved)?.passes || !JSON.parse(hasSaved)?.sections || !JSON.parse(hasSaved)?.story){DATA=clone(EMBEDDED_DATA);localStorage.setItem("wucaitan_v02",JSON.stringify(DATA))}
+}catch(e){DATA=clone(EMBEDDED_DATA)}
+
+
+if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
+Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
+DATA.sections.forEach(sec=>{if(!Array.isArray(sec.visibleTo))sec.visibleTo=DATA.passes.map(p=>p.id)});
+if(!DATA.scenePoints)DATA.scenePoints=clone(DEFAULT_DATA.scenePoints);
+Object.keys(DEFAULT_DATA.scenePoints).forEach(k=>{if(!DATA.scenePoints[k])DATA.scenePoints[k]=clone(DEFAULT_DATA.scenePoints[k]);DATA.scenePoints[k].forEach(pt=>{if(!Array.isArray(pt.visibleTo))pt.visibleTo=DATA.passes.map(p=>p.id)})});
+DATA.sections.forEach(sec=>sec.books.forEach(b=>{if(!Array.isArray(b.visibleTo))b.visibleTo=DATA.passes.map(p=>p.id)}));
+const defaultStorySection=DEFAULT_DATA.sections.find(x=>x.id==="section_b");
+const picnicDefault=defaultStorySection?.books?.find(x=>x.id==="book_picnic");
+const currentStorySection=DATA.sections.find(x=>x.id==="section_b");
+if(picnicDefault&&currentStorySection&&!currentStorySection.books.some(x=>x.id==="book_picnic")){currentStorySection.books.push(clone(picnicDefault));}
+if(!DATA.scenePoints.section_a)DATA.scenePoints.section_a=clone(DEFAULT_DATA.scenePoints.section_a);
+if(!DATA.scenePoints.section_b)DATA.scenePoints.section_b=clone(DEFAULT_DATA.scenePoints.section_b);
+if(!DATA.shelfDialogues)DATA.shelfDialogues=clone(DEFAULT_DATA.shelfDialogues);
+if(!DATA.display)DATA.display=clone(DEFAULT_DATA.display);
+if(!DATA.display.typewriter)DATA.display.typewriter=clone(DEFAULT_DATA.display.typewriter);
+Object.keys(DEFAULT_DATA.display.typewriter).forEach(k=>{if(typeof DATA.display.typewriter[k]!=="boolean")DATA.display.typewriter[k]=DEFAULT_DATA.display.typewriter[k]});
+let state="entrance", currentNode=DATA.story.start, pass=null, section=null, book=null, page=0, edit={}, survey={shelf:null,attempts:{},dialogLines:[],dialogIndex:0,results:[],resultIndex:0,foundByShelf:{}};
+try{const savedPassId=localStorage.getItem("wucaitan_v04_pass");if(savedPassId){pass=DATA.passes.find(p=>p.id===savedPassId)||null}}catch(e){}
+try{survey.foundByShelf=JSON.parse(localStorage.getItem("wucaitan_v04_found")||"{}")}catch(e){survey.foundByShelf={}}
+
+const out=document.getElementById("out"),cmd=document.getElementById("cmd"),brand=document.getElementById("brand"),status=document.getElementById("status"),quick=document.getElementById("quick");
+let typingTimer=null,typingActive=false,typingTarget="",typingIndex=0,typingButtons=[];
+applyThemeColor();
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function loadData(){
+ try{
+  const x=JSON.parse(localStorage.getItem("wucaitan_v02"));
+  if(x&&Array.isArray(x.passes)&&Array.isArray(x.sections)&&x.story)return x;
+ }catch(e){}
+ return clone(DEFAULT_DATA);
+}
+function saveData(){localStorage.setItem("wucaitan_v02",JSON.stringify(DATA))}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function render(text){
+ out.textContent=text;
+ out.scrollTop=out.scrollHeight;
+ window.scrollTo(0,document.body.scrollHeight);
+}
+function typewriterEnabled(){
+ const map=DATA.display?.typewriter||{};
+ return map[state]===true;
+}
+function stopTyping(){
+ if(typingTimer){clearInterval(typingTimer);typingTimer=null}
+ typingActive=false;
+}
+function finishTyping(){
+ stopTyping();
+ render(typingTarget);
+ buttons(typingButtons);
+}
+function normalizeDisplayText(text){
+ return String(text??"").replace(/\\n/g,"\n").replace(/\/n/g,"\n");
+}
+function renderWithTypewriter(text,btns=[]){
+ stopTyping();
+ typingTarget=normalizeDisplayText(text);typingButtons=btns||[];
+ if(!typewriterEnabled()){render(typingTarget);buttons(typingButtons);return}
+ typingActive=true;typingIndex=0;render("");
+ typingTimer=setInterval(()=>{
+  typingIndex++;
+  render(typingTarget.slice(0,typingIndex));
+  if(typingIndex>=typingTarget.length)finishTyping();
+ },Math.max(45,Math.min(90,1200/Math.max(typingTarget.length,1))));
+}
+
+function setStatus(){
+ brand.textContent=DATA.title;
+ status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
+ applyThemeColor();
+}
+function validColor(v){
+ return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(v||"").trim());
+}
+function applyThemeColor(){
+ const c=validColor(DATA.themeColor)?DATA.themeColor:"#82cdd0";
+ document.documentElement.style.setProperty("--theme-color",c);
+ const meta=document.querySelector('meta[name="theme-color"]');
+ if(meta)meta.setAttribute("content","#2a1a11");
+}
+function buttons(items){
+ quick.innerHTML="";
+ (items||[]).forEach(([label,value])=>{
+  const b=document.createElement("button");b.textContent=label;b.onclick=()=>{if(typingActive)finishTyping();cmd.value=value;submit()};
+  quick.appendChild(b);
+ });
+}
+function show(s,btns=[]){renderWithTypewriter(s,btns);}
+function submit(){handle(cmd.value);cmd.value="";}
+document.getElementById("send").onclick=submit;
+cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(typingActive){finishTyping();return}submit()}});
+
+
+function startStory(){
+ state="entrance";setStatus();
+ let s="----------图书馆入口-----------\n\n";
+ s+="               海              \n\n";
+ if(pass)s+="已经拥有自己的通行证。\n\n";
+ s+="[图书馆入口]\n[海]";
+ if(pass)s+="\n[再次输入密文]";
+ const bs=[["图书馆入口","libraryEnter"],["海","seaEnter"]];
+ if(pass)bs.push(["再次输入密文","reverify"]);
+ show(s,bs);
+}
+function seaEnter(){
+ if(!pass){startOriginalIntro();return}
+ seaDialogue();
+}
+function libraryEnter(){
+ if(!pass){startOriginalIntro();return}
+ library();
+}
+function reverify(){state="verify";show("请输入现实密文：\n\n以防你是个大人，这里可以输入字母和数字。\n");}
+function startOriginalIntro(){state="story";currentNode=DATA.story.start;showNode();}
+function showNode(){
+ const n=DATA.story.nodes[currentNode];
+ if(!n){startIntroFallback();return}
+ let s="";
+ if(n.speaker)s+=n.speaker+"：";
+ s+=n.text+"\n\n";
+ const choices=n.choices||[];
+ choices.forEach((c,i)=>s+="["+(i+1)+"] "+c.label+"\n");
+ if(!choices.length)s+="[回车] 继续\n";
+ show(s,choices.map((c,i)=>[(i+1)+". "+c.label,String(i+1)]));
+}
+function chooseNode(x){
+ const n=DATA.story.nodes[currentNode];
+ const choices=n?.choices||[];
+ if(!choices.length){library();return}
+ const c=choices[Number(x)-1];
+ if(!c){showNode();return}
+ if(c.to==="verify"){verify();return}
+ if(c.to==="hint"){hint();return}
+ currentNode=c.to;showNode();
+}
+function startIntroFallback(){
+ state="intro";
+ show(DATA.homeLines.join("\n")+"\n\n[1] 输入现实密文\n[2] 提示\n\n请输入：",[
+ ["1","1"],["2","2"]
+ ]);
+}
+function seaDialogue(){
+ state="seaMenu";
+ let n=pass?.name||"未知的访客";
+ show("海：请问有什么事吗？"+n+"\n\n[1] 这里是哪里？你是谁？\n[2] 听大人话\n[B] 再见",[["1","1"],["2","2"],["0","0"]]);
+}
+function seaChoice(x){
+ if(x.toUpperCase()==="B"){startStory();return}
+ let id=pass?.id||"";
+ let lines=[];
+ if(x==="1"){
+  if(id==="fox") lines=["海：你好，尊敬的狐狸","海：这里是五彩滩图书馆","海：不知道你是否记得","海：在创造这个地方时，你曾做出很大的贡献","海：我是海，一位幽灵","海：祝你在这里过得愉快"];
+  else lines=["海：这里是五彩滩图书馆，当然，只是一部分","海：我是海，如你所见","海：虽然还未完全完工，不过祝你在这里过得愉快"];
+ }else if(x==="2"){
+  if(id==="friend_jellyfish") lines=["海：诚挚欢迎莅临"];
+  else if(id==="fox"||id==="lighthouse_jellyfish") lines=["海：请放心，我不会对你说那些话"];
+  else lines=["海：……","海没有回答"];
+ }
+ survey.dialogLines=lines;survey.dialogIndex=0;state="seaDialog";showSeaLine();
+}
+function showSeaLine(){
+ const i=survey.dialogIndex, lines=survey.dialogLines;
+ if(i>=lines.length){seaDialogue();return}
+ show(lines[i],[[i<lines.length-1?"继续":"回到海","nextSea"]]);
+}
+function nextSea(){survey.dialogIndex++;showSeaLine()}
+function verify(){state="verify";show("请输入现实密文：\n\n如果你是大人，那么这句话的意思是请输入字母和数字。\n");}
+function hint(){state="hint";show(DATA.hint.join("\n")+"\n\n[B] 返回");}
+function authenticate(code){
+ const p=DATA.passes.find(p=>p.code===code);
+ if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[B] 返回",[["返回","backEntrance"]]);return}
+ pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
+ show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+}
+function canSee(item){return !!pass?.admin || !Array.isArray(item?.visibleTo) || item.visibleTo.includes(pass?.id)}
+function visibleSections(){return DATA.sections.filter(canSee)}
+function visibleShelves(sec){return (DATA.shelves?.[sec.id]||[]).filter(canSee)}
+function visiblePoints(sec){return (DATA.scenePoints?.[sec.id]||[]).filter(canSee)}
+function library(){
+ state="library";setStatus();let s=DATA.title+"\n\n",secs=visibleSections();
+ secs.forEach((x,i)=>s+="["+(i+1)+"] "+x.name+"\n");
+ s+="\n[sea] 海\n[B] 返回入口";
+ if(pass?.admin)s+="\n[admin] 灯塔水母编辑室";
+ show(s,secs.map((x,i)=>[(i+1)+". "+x.name,String(i+1)]).concat([["海","sea"],["返回","B"],pass?.admin?["编辑室","admin"]:null].filter(Boolean)));
+}
+function visibleBooks(sec){
+ return sec.books.filter(b=>b.visibleTo.includes(pass?.id)||pass?.admin);
+}
+function saveFound(){try{localStorage.setItem("wucaitan_v04_found",JSON.stringify(survey.foundByShelf||{}))}catch(e){}}
+function foundBooksForShelf(id){
+ const ids=survey.foundByShelf?.[id]||[];
+ return ids.map(bid=>visibleBooks(section).find(b=>b.id===bid)).filter(Boolean);
+}
+function markFound(sh,b){
+ if(!survey.foundByShelf[sh.id])survey.foundByShelf[sh.id]=[];
+ if(!survey.foundByShelf[sh.id].includes(b.id))survey.foundByShelf[sh.id].push(b.id);
+ saveFound();
+}
+function showSection(sec){
+ if(!canSee(sec)){library();return}
+ section=sec;state="scene";const shelves=visibleShelves(sec),points=visiblePoints(sec);
+ let s="---------- "+sec.name+" ----------\n\n";
+ if(sec.description)s+=sec.description+"\n\n";
+ shelves.forEach((sh,i)=>{s+="["+(i+1)+"] "+sh.name+"\n";foundBooksForShelf(sh.id).forEach(b=>s+="    · "+b.name+"\n")});
+ if(points.length){s+="\n";points.forEach((pt,i)=>s+="[P"+(i+1)+"] "+pt.name+"\n")}
+ if(!shelves.length&&!points.length)s+="这里似乎什么也没有。\n";
+ s+="\n[B] 返回图书馆";
+ const bs=[];
+ shelves.forEach((sh,i)=>{bs.push([(i+1)+". "+sh.name,"shelf:"+sh.id]);foundBooksForShelf(sh.id).forEach(b=>bs.push(["查看《"+b.name+"》","found:"+b.id]))});
+ points.forEach(pt=>bs.push([pt.name,"point:"+pt.id]));
+ bs.push(["返回","B"]);show(s,bs);
+}
+function shelfById(id){return visibleShelves(section).find(x=>x.id===id)}
+function visibleShelfBooks(sh){
+ const all=visibleBooks(section);
+ const foundElsewhere=new Set(Object.values(survey.foundByShelf||{}).flat());
+ return all.filter(b=>(!b.shelf||b.shelf===sh.id)&&!foundElsewhere.has(b.id));
+}
+function openScenePoint(id){
+ const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
+ if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
+ showSection(section);
+}
+function windowLeave(){showSection(section)}
+function windowNear(){state="windowNear";show("就像现实，远处林立着形形色色的楼",[["离开","windowLeave"],["细看","windowDetail"]])}
+function windowDetail(){
+ state="windowDetail";
+ const lines=["一座白色的高楼上，有细微的红点闪烁，就像停机坪，但你很清楚那不是","密密麻麻的光点，只是在那里，让人分不清是飞机，星星，灯中的哪种","模糊的广阔\n人类虽然没有合议，却创造出了这样的奇观，真是奇迹。"];
+ show(lines[Math.floor(Math.random()*lines.length)],[["返回","B"]]);
+}
+function beginShelfSurvey(id){
+ const sh=shelfById(id);if(!sh){showSection(section);return}
+ survey.shelf=id;survey.dialogIndex=0;survey.resultIndex=0;survey.results=[];
+ const key=pass?.id&&DATA.shelfDialogues?.[pass.id]?pass.id:"default";
+ survey.dialogLines=DATA.shelfDialogues?.[key]||DATA.shelfDialogues.default;
+ state="shelfVN";showShelfLine();
+}
+function showShelfLine(){
+ const i=survey.dialogIndex,lines=survey.dialogLines||[];
+ if(i<lines.length){show(lines[i],[["继续","shelfNext"]]);return}
+ state="surveyChoice";
+ show("书架。\n\n要寻找书吗？",[["寻找","doSurvey"],["离开","leaveShelf"]]);
+}
+function shelfNext(){survey.dialogIndex++;showShelfLine()}
+function makePlaceholderPool(){
+ return [
+  {kind:"plain",name:"书",lines:["只是书。"],weight:3},
+  {kind:"odd",name:"封面奇怪的书",lines:["你看不懂里面的内容。"],weight:2},
+  {kind:"sealed",name:"崭新到未开封的书",lines:["因为没有开封，你不敢打开看。"],weight:2},
+  {kind:"empty",name:"没有封面的书",lines:["里面是空的。"],weight:2},
+  {kind:"thief",name:"奇怪的书外壳",lines:["里面夹着一张卡片。","恭喜你，这本书已经被我偷走了！\n         ----怪盗"],weight:0.05}
+ ];
+}
+function doSurvey(){
+ const id=survey.shelf, sh=shelfById(id);
+ const n=(survey.attempts[id]||0)+1;survey.attempts[id]=n;
+ const books=visibleShelfBooks(sh);
+ let pool=[];
+ books.forEach(b=>pool.push({kind:"book",book:b,weight:Math.min(3+n,12)}));
+ makePlaceholderPool().forEach(x=>pool.push(x));
+ const count=Math.floor(Math.random()*4),picked=[],used=new Set();
+ while(picked.length<count&&pool.length){
+  const total=pool.reduce((a,x)=>a+x.weight,0);let r=Math.random()*total,idx=0;
+  for(;idx<pool.length;idx++){r-=pool[idx].weight;if(r<=0)break}
+  idx=Math.min(idx,pool.length-1);
+  const x=pool.splice(idx,1)[0];
+  const key=x.kind==="book"?"book:"+x.book.id:x.kind;
+  if(!used.has(key)){used.add(key);picked.push(x)}
+ }
+ survey.results=picked;survey.resultIndex=0;state="surveyResult";showCurrentResult();
+}
+function showCurrentResult(){
+ const item=survey.results?.[survey.resultIndex];
+ if(!item){
+  show("仔细寻找了一遍，没有发现什么。",[["继续寻找","repeatSurvey"],["离开","leaveShelf"]]);return;
+ }
+ if(item.kind==="book")markFound(shelfById(survey.shelf),item.book);
+ const title=item.kind==="book"?item.book.name:item.name;
+ const line="发现了一本书："+title+"";
+ const next=item.kind==="book"?["打开","openFound"]:["打开","openPlaceholder"];
+ show(line,[[next[0],next[1]],["继续寻找","nextResult"],["离开","leaveShelf"]]);
+}
+function openPlaceholder(){
+ const item=survey.results?.[survey.resultIndex];if(!item){showCurrentResult();return}
+ state="placeholder";survey.dialogLines=item.lines||["里面什么也没有。"];survey.dialogIndex=0;showPlaceholderLine();
+}
+function showPlaceholderLine(){
+ const lines=survey.dialogLines||[],i=survey.dialogIndex||0;
+ if(i<lines.length){show(lines[i],[[i<lines.length-1?"继续":"返回调查结果",i<lines.length-1?"placeholderNext":"placeholderDone"]]);return}
+ showCurrentResult();
+}
+function placeholderNext(){survey.dialogIndex++;showPlaceholderLine()}
+function placeholderDone(){
+ survey.dialogLines=[];survey.dialogIndex=0;
+ state="surveyChoice";
+ show("你把它放回原处。\n\n要继续调查吗？",[["继续调查","doSurvey"],["离开","leaveShelf"]]);
+}
+function nextResult(){survey.resultIndex++;showCurrentResult()}
+function openFound(){const f=survey.results?.[survey.resultIndex];if(f&&f.kind==="book"){survey.returnToSurvey=true;openBook(f.book)}else openPlaceholder()}
+function repeatSurvey(){doSurvey()}
+function leaveShelf(){survey.returnToSurvey=false;showSection(section)}
+
+function openBook(b){book=b;page=0;showBookPage()}
+function showBookPage(){
+ state="book";const p=book.pages[page]||{text:"",image:"",caption:""};
+ let s="---------- "+book.name+" ----------\n\n";
+ s+="第 "+(page+1)+" / "+book.pages.length+" 页\n\n";
+ if(p.image)s+="[图片]\n"+p.image+"\n"+(p.caption?p.caption+"\n":"")+"\n";
+ s+=(p.text||"")+"\n\n";
+ s+="[回车] 下一页";
+ if(page>0)s+="\n[B] 返回书架";
+ show(s);
+}
+function returnFromFoundBook(){survey.returnToSurvey=false;state="surveyChoice";show("你合上了《"+book.name+"》。\n\n要继续调查吗？",[["继续调查","repeatSurvey"],["离开","leaveShelf"]])}
+function nextPage(){if(page<book.pages.length-1){page++;showBookPage()}else if(survey.returnToSurvey)returnFromFoundBook();else showSection(section)}
+
+function isAdmin(){return !!pass?.admin}
+
+function adminHome(){
+ if(!isAdmin())return library();
+ state="admin";
+ show("================================\n        灯塔水母 · 编辑室\n================================\n\n"+
+ "这里是五彩滩图书馆的内容管理区域。\n\n"+
+ "[1] 图书馆主页\n[2] 引入与剧情\n[3] 通行证\n[4] 图书馆分区\n[5] 书目\n[6] 书页与图片\n[7] 权限与可见性\n[8] 数据\n[9] 主题颜色\n[10] 文字显示\n[B] 返回图书馆\n\n>",
+ [["主页","1"],["剧情","2"],["通行证","3"],["分区","4"],["书目","5"],["书页","6"],["权限","7"],["数据","8"],["主题颜色","9"],["文字显示","10"]]);
+}
+function adminHomeChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){library();return}
+ if(x==="1")adminHomepage();
+ else if(x==="2")adminStory();
+ else if(x==="3")adminPasses();
+ else if(x==="4")adminSections();
+ else if(x==="5")adminBooks();
+ else if(x==="6")adminPageSelect();
+ else if(x==="7")adminVisibility();
+ else if(x==="8")adminData();
+ else if(x==="9")adminTheme();
+ else if(x==="10")adminTypewriter();
+ else adminHome();
+}
+
+function adminTypewriter(){
+ state="adminTypewriter";
+ const m=DATA.display?.typewriter||{};
+ const labels={entrance:"入口",story:"剧情",intro:"旧式引入",seaDialog:"海的对话",shelfVN:"书架调查·人物对话",placeholder:"占位书对话",surveyChoice:"调查选择",surveyResult:"调查结果",book:"书页",library:"图书馆主页",scene:"分区场景",windowIntro:"窗·初见",windowNear:"窗·近看",windowDetail:"窗·细看",admin:"编辑室",adminHomepage:"主页编辑",adminStory:"剧情编辑",adminPass:"通行证编辑",adminSection:"分区编辑",adminBook:"书目编辑",adminPageSelect:"书页选择",adminPage:"书页编辑",adminVisibility:"权限编辑",adminData:"数据页",adminTheme:"主题颜色页"};
+ let s="========== 文字显示 ==========\n\n";
+ Object.keys(labels).forEach((k,i)=>s+="["+(i+1)+"] "+labels[k]+"："+(m[k]===true?"开":"关")+"\n");
+ s+="\n修改：set=页面状态|on/off\n例如：set=shelfVN|on\n也可以：set=seaDialog|off\n\n[B] 返回编辑室";
+ show(s);
+}
+function adminTypewriterChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("set=")){
+  const v=x.slice(4).split("|"),key=(v[0]||"").trim(),val=(v[1]||"").trim().toLowerCase();
+  if(Object.prototype.hasOwnProperty.call(DATA.display.typewriter,key)&&(val==="on"||val==="off")){
+   DATA.display.typewriter[key]=val==="on";saveData();adminTypewriter();return;
+  }
+ }
+ adminTypewriter();
+}
+
+function adminTheme(){
+ state="adminTheme";
+ const c=validColor(DATA.themeColor)?DATA.themeColor:"#82cdd0";
+ show("========== 主题颜色 ==========\n\n"+
+      "当前颜色："+c+"\n\n"+
+      "输入颜色代码：color=#十六进制颜色\n"+
+      "例如：color=#7ac7c9\n\n"+
+      "[B] 返回编辑室");
+}
+function adminThemeChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("color=") || validColor(x)){
+  const c=(x.startsWith("color=")?x.slice(6):x).trim();
+  if(validColor(c)){DATA.themeColor=c;saveData();applyThemeColor();adminTheme();return}
+  show("颜色代码无效。请输入类似 #82cdd0 的六位十六进制颜色代码。\n\n[B] 返回",[["返回","B"]]);
+  state="adminTheme";
+  return;
+ }
+ adminTheme();
+}
+
+function adminHomepage(){
+ state="adminHomepage";
+ let s="========== 图书馆主页 ==========\n\n";
+ s+="网站名称："+DATA.title+"\n\n";
+ DATA.homeLines.forEach((x,i)=>s+="["+i+"] "+x+"\n");
+ s+="\n修改名称：title=新名称\n修改文字：line=编号=新文字\n新增文字：add=新文字\n删除文字：del=编号\n\n[B] 返回";
+ show(s);
+}
+function adminHomepageChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("title=")){DATA.title=x.slice(6);saveData();setStatus();adminHomepage();return}
+ if(x.startsWith("line=")){let a=x.slice(5).split("="),i=Number(a.shift());if(DATA.homeLines[i]!=null)DATA.homeLines[i]=a.join("=");saveData();adminHomepage();return}
+ if(x.startsWith("add=")){DATA.homeLines.push(x.slice(4));saveData();adminHomepage();return}
+ if(x.startsWith("del=")){DATA.homeLines.splice(Number(x.slice(4)),1);saveData();adminHomepage();return}
+ adminHomepage();
+}
+
+function adminStory(){
+ state="adminStory";
+ const nodes=DATA.story.nodes;
+ let s="========== 引入与剧情 ==========\n\n";
+ Object.keys(nodes).forEach(id=>{
+  const n=nodes[id];s+="["+id+"] "+(n.speaker?n.speaker+"：":"")+n.text+"\n";
+  (n.choices||[]).forEach((c,i)=>s+="   → "+(i+1)+". "+c.label+" → "+c.to+"\n");
+ });
+ s+="\n编辑节点：edit=id|说话者|内容\n新增节点：add=id|说话者|内容\n删除节点：del=id\n新增分支：choice=id|选项文字|目标节点ID\n删除分支：choice-del=id|编号\n查看结构：tree\n";
+ s+="\n当前入口："+DATA.story.start+"\n修改入口：start=节点ID\n\n[B] 返回";
+ show(s);
+}
+function adminStoryChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x==="tree"){adminStory();return}
+ if(x.startsWith("start=")){DATA.story.start=x.slice(6);saveData();adminStory();return}
+ if(x.startsWith("edit=")){
+  const v=x.slice(5).split("|"),id=v.shift();
+  if(DATA.story.nodes[id])DATA.story.nodes[id]={speaker:v[0]||"",text:v[1]||"",choices:DATA.story.nodes[id].choices||[]};
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("add=")){
+  const v=x.slice(4).split("|"),id=v.shift();
+  if(id&&!DATA.story.nodes[id])DATA.story.nodes[id]={speaker:v[0]||"",text:v[1]||"",choices:[]};
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("del=")){delete DATA.story.nodes[x.slice(4)];saveData();adminStory();return}
+ if(x.startsWith("choice=")){
+  const v=x.slice(7).split("|"),id=v.shift();
+  if(DATA.story.nodes[id])DATA.story.nodes[id].choices.push({label:v[0]||"继续",to:v[1]||DATA.story.start});
+  saveData();adminStory();return;
+ }
+ if(x.startsWith("choice-del=")){
+  const v=x.slice(11).split("|"),id=v[0],i=Number(v[1]);
+  if(DATA.story.nodes[id])DATA.story.nodes[id].choices.splice(i,1);
+  saveData();adminStory();return;
+ }
+ adminStory();
+}
+
+function adminPasses(){
+ state="adminPass";
+ let s="========== 通行证 ==========\n\n";
+ DATA.passes.forEach((p,i)=>s+="["+i+"] "+p.name+" | 内部ID："+p.id+(p.admin?" | 管理员":"")+"\n");
+ s+="\n修改：edit=编号|内部ID|验证编号|显示名称|admin(true/false)\n新增：add=内部ID|验证编号|显示名称|admin(true/false)\n删除：del=编号\n\n注意：内部ID与验证编号不会显示给普通访客。\n\n[B] 返回";
+ show(s);
+}
+function adminPassChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("edit=")){
+  const v=x.slice(5).split("|"),i=Number(v.shift());
+  if(DATA.passes[i])DATA.passes[i]={id:v[0],code:v[1],name:v[2],admin:v[3]==="true"};
+  saveData();adminPasses();return;
+ }
+ if(x.startsWith("add=")){
+  const v=x.slice(4).split("|");if(v.length>=3)DATA.passes.push({id:v[0],code:v[1],name:v[2],admin:v[3]==="true"});
+  saveData();adminPasses();return;
+ }
+ if(x.startsWith("del=")){let i=Number(x.slice(4));if(DATA.passes[i]?.admin&&DATA.passes.filter(p=>p.admin).length<=1){adminPasses();return}DATA.passes.splice(i,1);saveData();adminPasses();return}
+ adminPasses();
+}
+
+function adminSections(){
+ state="adminSection";
+ let s="========== 图书馆分区 ==========\n\n";
+ DATA.sections.forEach((a,i)=>s+="["+i+"] "+a.name+" | "+a.books.length+" 本书\n");
+ s+="\n修改：edit=编号|新名称|描述\n新增：add=内部ID|名称|描述\n删除：del=编号\n\n书架（V4场景）："+(DATA.shelves?.[DATA.sections[0]?.id]?"已启用":"")+"\n\n[B] 返回";
+ show(s);
+}
+function adminSectionChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("edit=")){let v=x.slice(5).split("|"),i=Number(v.shift());if(DATA.sections[i]){DATA.sections[i].name=v[0]||DATA.sections[i].name;DATA.sections[i].description=v[1]||""}saveData();adminSections();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|");if(v.length>=2)DATA.sections.push({id:v[0],name:v[1],description:v[2]||"",visibleTo:DATA.passes.map(p=>p.id),books:[]});if(!DATA.shelves)DATA.shelves={};DATA.shelves[v[0]]=[];saveData();adminSections();return}
+ if(x.startsWith("del=")){DATA.sections.splice(Number(x.slice(4)),1);saveData();adminSections();return}
+ adminSections();
+}
+
+function allBookRefs(){
+ const arr=[];DATA.sections.forEach((s,si)=>s.books.forEach((b,bi)=>arr.push({s,si,b,bi})));return arr;
+}
+function adminBooks(){
+ state="adminBook";
+ let s="========== 书目 ==========\n\n";
+ DATA.sections.forEach((sct,si)=>{
+  s+="【"+si+"】"+sct.name+"\n";
+  sct.books.forEach((b,bi)=>s+="  ["+si+"."+bi+"] "+b.name+" | ID:"+b.id+"\n");
+ });
+ s+="\n修改：edit=分区,书目|内部ID|书名|简介|书架ID\n新增：add=分区|内部ID|书名|简介|书架ID\n删除：del=分区,书目\n编辑页面：pages=分区,书目\n\n[B] 返回";
+ show(s);
+}
+function adminBookChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("edit=")){let v=x.slice(5).split("|"),p=v.shift().split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b){b.id=v[0]||b.id;b.name=v[1]||b.name;b.description=v[2]||"";if(v[3])b.shelf=v[3]}saveData();adminBooks();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|"),s=DATA.sections[+v[0]];if(s)s.books.push({id:v[1],shelf:v[4]||"",name:v[2],description:v[3]||"",visibleTo:DATA.passes.map(p=>p.id),pages:[{text:"新的一页",image:"",caption:""}]});saveData();adminBooks();return}
+ if(x.startsWith("del=")){let p=x.slice(4).split(",");DATA.sections[+p[0]]?.books.splice(+p[1],1);saveData();adminBooks();return}
+ if(x.startsWith("pages=")){let p=x.slice(6).split(",");if(DATA.sections[+p[0]]?.books[+p[1]]){edit={si:+p[0],bi:+p[1]};adminPages()}return}
+ adminBooks();
+}
+
+function adminPageSelect(){
+ state="adminPageSelect";
+ let s="========== 书页与图片 ==========\n\n";
+ s+="请选择要编辑的书目：\n\n";
+
+ let count=0;
+ DATA.sections.forEach((sct)=>{
+  s+="【"+sct.name+"】\n";
+  sct.books.forEach((b)=>{
+   count++;
+   s+="["+count+"] "+b.name+"\n";
+  });
+  s+="\n";
+ });
+
+ if(count===0) s+="目前还没有书目。\n";
+ s+="输入书目编号。\n";
+ s+="[B] 返回编辑室";
+
+ const btns=[];
+ count=0;
+ DATA.sections.forEach((sct)=>{
+  sct.books.forEach((b)=>{
+   count++;
+   btns.push([String(count)+". "+b.name,String(count)]);
+  });
+ });
+ btns.push(["返回","B"]);
+ show(s,btns);
+}
+
+function adminPageSelectChoice(x){
+ const value=String(x).trim().toUpperCase();
+
+ if(value==="B" || value==="BACK"){
+  adminHome();
+  return;
+ }
+
+ const target=Number(value)-1;
+
+ if(!Number.isInteger(target)||target<0){
+  adminPageSelect();
+  return;
+ }
+
+ let count=0;
+ for(let si=0;si<DATA.sections.length;si++){
+  for(let bi=0;bi<DATA.sections[si].books.length;bi++){
+   if(count===target){
+    edit={si:si,bi:bi};
+    adminPages();
+    return;
+   }
+   count++;
+  }
+ }
+
+ adminPageSelect();
+}
+
+function adminPages(){
+ if(!edit || edit.si==null || edit.bi==null || !DATA.sections[edit.si] || !DATA.sections[edit.si].books[edit.bi]){
+  adminPageSelect();
+  return;
+ }
+ state="adminPage";
+ const b=DATA.sections[edit.si].books[edit.bi];
+ let s="========== 书页与图片 ==========\n\n《"+b.name+"》\n\n";
+ b.pages.forEach((p,i)=>s+="["+i+"] "+(p.text||"(无文字)")+(p.image?" | 图片":"")+"\n");
+ s+="\n修改文字：text=页码=内容\n修改图片：image=页码=图片地址\n图片说明：caption=页码=说明\n新增页面：add=文字|图片地址|图片说明\n删除页面：del=页码\n\n[B] 返回";
+ show(s);
+}
+
+function adminPageSelectChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ const target=Number(x);
+ if(!Number.isInteger(target)||target<0){adminPageSelect();return}
+ let count=0;
+ for(let si=0;si<DATA.sections.length;si++){
+  for(let bi=0;bi<DATA.sections[si].books.length;bi++){
+   if(count===target){
+    edit={si,bi};
+    adminPages();
+    return;
+   }
+   count++;
+  }
+ }
+ adminPageSelect();
+}
+function adminPageChoice(x){
+ const b=DATA.sections[edit.si].books[edit.bi];
+ if(String(x).trim().toUpperCase()==="B"){adminPageSelect();return}
+ if(x.startsWith("text=")){let a=x.slice(5).split("="),i=+a.shift();if(b.pages[i])b.pages[i].text=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("image=")){let a=x.slice(6).split("="),i=+a.shift();if(b.pages[i])b.pages[i].image=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("caption=")){let a=x.slice(8).split("="),i=+a.shift();if(b.pages[i])b.pages[i].caption=a.join("=");saveData();adminPages();return}
+ if(x.startsWith("add=")){let v=x.slice(4).split("|");b.pages.push({text:v[0]||"",image:v[1]||"",caption:v[2]||""});saveData();adminPages();return}
+ if(x.startsWith("del=")){b.pages.splice(+x.slice(4),1);saveData();adminPages();return}
+ adminPages();
+}
+
+function adminVisibility(){
+ state="adminVisibility";let s="========== 权限与可见性 ==========\n\n";
+ DATA.sections.forEach((sec,si)=>{
+  s+="【分区 "+si+"】"+sec.name+"："+(sec.visibleTo||[]).map(id=>DATA.passes.find(p=>p.id===id)?.name||id).join("、")+"\n";
+  (DATA.shelves?.[sec.id]||[]).forEach(sh=>s+="  书架 "+sh.id+"："+(sh.visibleTo||[]).map(id=>DATA.passes.find(p=>p.id===id)?.name||id).join("、")+"\n");
+  (DATA.scenePoints?.[sec.id]||[]).forEach(pt=>s+="  互动点 "+pt.id+"："+(pt.visibleTo||[]).map(id=>DATA.passes.find(p=>p.id===id)?.name||id).join("、")+"\n");
+  sec.books.forEach((b,bi)=>s+="  ["+si+","+bi+"] "+b.name+"："+b.visibleTo.map(id=>DATA.passes.find(p=>p.id===id)?.name||id).join("、")+"\n");
+ });
+ s+="\n书：show=分区,书目|内部ID,内部ID\n分区：show-section=分区|内部ID,内部ID\n书架：show-shelf=分区|书架ID,内部ID\n互动点：show-point=分区|互动点ID,内部ID\n隐藏：hide-section=分区|任意内容 / hide-shelf=分区,书架ID / hide-point=分区,互动点ID\n\n[B] 返回";show(s);
+}
+function adminVisibilityChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x.startsWith("show=")){let v=x.slice(5).split("|"),p=v.shift().split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=v.join("|").split(",").filter(Boolean);saveData();adminVisibility();return}
+ if(x.startsWith("hide=")){let p=x.slice(5).split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=[];saveData();adminVisibility();return}
+ if(x.startsWith("all=")){let p=x.slice(4).split(","),b=DATA.sections[+p[0]]?.books[+p[1]];if(b)b.visibleTo=DATA.passes.map(p=>p.id);saveData();adminVisibility();return}
+ function set(kind,raw,ids){const v=raw.split("|"),p=v[0].split(","),sec=DATA.sections[+p[0]];if(!sec)return;const item=kind==="section"?sec:kind==="shelf"?(DATA.shelves?.[sec.id]||[]).find(z=>z.id===p[1]):(DATA.scenePoints?.[sec.id]||[]).find(z=>z.id===p[1]);if(item)item.visibleTo=ids}
+ if(x.startsWith("show-section=")){let raw=x.slice(13),ids=raw.split("|")[1]?.split(",").filter(Boolean)||[];set("section",raw,ids);saveData();adminVisibility();return}
+ if(x.startsWith("hide-section=")){set("section",x.slice(13),[]);saveData();adminVisibility();return}
+ if(x.startsWith("show-shelf=")){let raw=x.slice(11),ids=raw.split("|")[1]?.split(",").filter(Boolean)||[];set("shelf",raw,ids);saveData();adminVisibility();return}
+ if(x.startsWith("hide-shelf=")){set("shelf",x.slice(11),[]);saveData();adminVisibility();return}
+ if(x.startsWith("show-point=")){let raw=x.slice(11),ids=raw.split("|")[1]?.split(",").filter(Boolean)||[];set("point",raw,ids);saveData();adminVisibility();return}
+ if(x.startsWith("hide-point=")){set("point",x.slice(11),[]);saveData();adminVisibility();return}
+ adminVisibility();
+}
+function adminData(){
+ state="adminData";
+ show("========== 数据 ==========\n\n"+
+ "[1] 导出 JSON 备份\n[2] 导入 JSON 备份\n[3] 导出当前网站\n[4] 恢复默认数据\n[B] 返回\n\n>"+
+ "\n\n所有内容当前保存在此浏览器的 localStorage 中。",[
+ ["导出","1"],["导入","2"],["恢复默认","3"]
+ ]);
+}
+function adminDataChoice(x){
+ if(String(x).trim().toUpperCase()==="B"){adminHome();return}
+ if(x==="1"){downloadData();adminData();return}
+ if(x==="2"){importData();return}
+ if(x==="3"){downloadWebsite();return}
+ if(x==="4"){if(confirm("确定恢复默认数据？")){DATA=clone(DEFAULT_DATA);saveData();startStory()}else adminData();return}
+ adminData();
+}
+
+function exportWebsite(){
+  const cloneDoc=document.documentElement.cloneNode(true);
+  const script=cloneDoc.querySelector("script");
+  if(script){
+    let code=script.textContent;
+    const marker="const EMBEDDED_DATA=";
+    const defaultMarker=";\nconst DEFAULT_DATA=";
+    let embStart=code.indexOf(marker);
+    while(embStart>=0){
+      const embEnd=code.indexOf(defaultMarker,embStart);
+      if(embEnd<0)break;
+      code=code.slice(0,embStart)+code.slice(embEnd+2);
+      embStart=code.indexOf(marker);
+    }
+    const oldOverride='if(typeof EMBEDDED_DATA!=="undefined"){DATA=clone(EMBEDDED_DATA);localStorage.setItem("wucaitan_v02",JSON.stringify(DATA));}';
+    code=code.split(oldOverride).join("");
+    const embedded="const EMBEDDED_DATA="+JSON.stringify(DATA)+";\n";
+    code=code.replace("const DEFAULT_DATA=",embedded+"const DEFAULT_DATA=");
+    code=code.replace("let DATA=loadData();","let DATA=loadData();\ntry{const hasSaved=localStorage.getItem(\"wucaitan_v02\");if(!hasSaved || !JSON.parse(hasSaved)?.passes || !JSON.parse(hasSaved)?.sections || !JSON.parse(hasSaved)?.story){DATA=clone(EMBEDDED_DATA);localStorage.setItem(\"wucaitan_v02\",JSON.stringify(DATA))}}catch(e){DATA=clone(EMBEDDED_DATA)}");
+    script.textContent=code;
+  }
+  const out=cloneDoc.querySelector("#out");
+  if(out)out.textContent="";
+  const quick=cloneDoc.querySelector("#quick");
+  if(quick)quick.innerHTML="";
+  const finalHtml="<!doctype html>\n"+cloneDoc.outerHTML;
+  const blob=new Blob([finalHtml],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="index.html";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+
+function downloadWebsite(){exportWebsite()}
+function downloadData(){
+ const blob=new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="wucaitan-library.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importData(){
+ const input=document.createElement("input");input.type="file";input.accept=".json,application/json";input.onchange=()=>{
+  const f=input.files?.[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{
+   try{const x=JSON.parse(r.result);if(!x.passes||!x.sections||!x.story)throw Error();DATA=x;saveData();adminHome()}catch(e){show("导入失败：文件格式不正确。\n\n[B] 返回");state="adminData"}};
+  r.readAsText(f,"utf-8");
+ };input.click();
+}
+
+function resetLocalEdits(){
+ try{localStorage.removeItem("wucaitan_v02")}catch(e){}
+ DATA=clone(DEFAULT_DATA);
+ survey.foundByShelf={};
+ saveFound();
+ pass=pass?DATA.passes.find(p=>p.id===pass.id)||null:null;
+ setStatus();
+ startStory();
+}
+function resetEverything(){
+ stopTyping();
+ try{
+  localStorage.removeItem("wucaitan_v02");
+  localStorage.removeItem("wucaitan_v04_pass");
+  localStorage.removeItem("wucaitan_v04_found");
+ }catch(e){}
+ DATA=clone(DEFAULT_DATA);
+ pass=null;section=null;book=null;page=0;
+ survey={shelf:null,attempts:{},dialogLines:[],dialogIndex:0,results:[],resultIndex:0,foundByShelf:{}};
+ setStatus();
+ startStory();
+}
+
+function handle(raw){
+ const x=String(raw??"").trim();
+ if(x.toUpperCase()==="B" && state.startsWith("admin") && state!=="admin"){
+  adminHome();
+  return;
+ }
+ if(state==="entrance"){
+  if(x==="R"){resetEverything();return}
+  if(x==="r"){resetLocalEdits();return}
+  if(x==="libraryEnter"||x.toLowerCase()==="library"){libraryEnter();return}
+  if(x==="seaEnter"||x.toLowerCase()==="sea"){seaEnter();return}
+  if(x==="reverify"){reverify();return}
+  startStory();return;
+ }
+ if(state==="story"){chooseNode(x);return}
+ if(state==="intro"){
+  if(x==="1")verify();else if(x==="2")hint();else if(x==="r"){resetLocalEdits()}else if(x==="R"){resetEverything()}else startIntroFallback();return;
+ }
+ if(state==="hint"){startStory();return}
+ if(state==="verify"){authenticate(x);return}
+ if(state==="verifyFail"){startStory();return}
+ if(state==="afterAuth"){if(x==="libraryEnter")library();else library();return}
+ if(state==="seaMenu"){seaChoice(x);return}
+ if(state==="seaDialog"){if(x==="nextSea")nextSea();else seaDialogue();return}
+ if(state==="library"){
+  if(x.toLowerCase()==="admin"&&isAdmin()){adminHome();return}
+  if(x.toLowerCase()==="sea"){seaDialogue();return}
+  if(x.toUpperCase()==="B"){startStory();return}
+  const s=DATA.sections[+x-1];if(s)showSection(s);else library();return;
+ }
+ if(state==="scene"){
+  if(x.toUpperCase()==="B"){library();return}
+  if(x.startsWith("shelf:")){beginShelfSurvey(x.slice(6));return}
+  if(x.startsWith("found:")){const f=visibleBooks(section).find(b=>b.id===x.slice(6));if(f){survey.returnToSurvey=false;openBook(f)}else showSection(section);return}
+  if(x.startsWith("point:")){openScenePoint(x.slice(6));return}
+  const shelves=visibleShelves(section),sh=shelves[+x-1];if(sh)beginShelfSurvey(sh.id);else showSection(section);return;
+ }
+ if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
+ if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
+ if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
+ if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
+ if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
+ if(state==="placeholder"){if(x==="placeholderNext")placeholderNext();else if(x==="placeholderDone")placeholderDone();else showPlaceholderLine();return}
+ if(state==="surveyResult"){
+  if(x==="surveyResultNext")surveyResultNext();else if(x==="openFound")openFound();else if(x==="openPlaceholder")openPlaceholder();else if(x==="repeatSurvey")repeatSurvey();else if(x==="leaveShelf")leaveShelf();return;
+ }
+ if(state==="book"){if(x.toUpperCase()==="B"){if(survey.returnToSurvey)returnFromFoundBook();else showSection(section)}else nextPage();return}
+ if(state==="admin")adminHomeChoice(x);
+ else if(state==="adminHomepage")adminHomepageChoice(x);
+ else if(state==="adminStory")adminStoryChoice(x);
+ else if(state==="adminPass")adminPassChoice(x);
+ else if(state==="adminSection")adminSectionChoice(x);
+ else if(state==="adminBook")adminBookChoice(x);
+ else if(state==="adminPageSelect")adminPageSelectChoice(x);
+ else if(state==="adminPage")adminPageChoice(x);
+ else if(state==="adminVisibility")adminVisibilityChoice(x);
+ else if(state==="adminData")adminDataChoice(x);
+ else if(state==="adminTheme")adminThemeChoice(x);
+ else if(state==="adminTypewriter")adminTypewriterChoice(x);
+ else startStory();
+}
+
+startStory();
+</script>
+
+
+</body></html>
