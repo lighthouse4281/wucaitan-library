@@ -44,7 +44,8 @@ const DEFAULT_DATA={
  display:{
   typewriter:{
    entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
-   surveyChoice:true,surveyResult:true,book:true,library:false,scene:true,windowIntro:true,windowNear:true,windowDetail:true,
+   surveyChoice:true,surveyResult:true,book:true,library:false,scene:false,windowIntro:true,windowNear:true,windowDetail:true,
+   naturalist:false,naturalistDialog:true,
    admin:false,adminHomepage:false,adminStory:false,adminPass:false,adminSection:false,
    adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false,adminBackground:false
   }
@@ -373,27 +374,78 @@ function openNaturalist(){
  state="naturalist";
  show("桌子上堆着许多书",[["走近","naturalistNear"]]);
 }
+
+function startNaturalistPages(pages, finalButtons=[]){
+ state="naturalistDialog";
+ survey.dialogLines=pages;
+ survey.dialogIndex=0;
+ survey.dialogButtons=finalButtons;
+ showNaturalistPage();
+}
+
+function showNaturalistPage(){
+ const lines=survey.dialogLines||[];
+ const i=survey.dialogIndex||0;
+ if(i>=lines.length){return}
+ const isLast=i===lines.length-1;
+ const btns=isLast?(survey.dialogButtons||[["继续","naturalistNext"]]):[["继续","naturalistNext"]];
+ show(lines[i],btns);
+}
+
+function naturalistNext(){
+ survey.dialogIndex=(survey.dialogIndex||0)+1;
+ if(survey.dialogIndex<(survey.dialogLines||[]).length){
+  showNaturalistPage();
+ }else{
+  const done=survey.dialogDone;
+  survey.dialogDone=null;
+  if(done)done();
+  else naturalistBack();
+ }
+}
+
 function openNaturalistNear(){
- state="naturalist";
- show("走近一看，一只兔子正坐在书堆后的椅子上。\n它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情地看着你。\n\n博物学家：你好\n博物学家：我是博物学家，你就是从现实来的客人吗？",
- [["可能","naturalistKnown"],["是的","naturalistYes"]]);
+ const pages=[
+  "走近一看，一只兔子正坐在书堆后的椅子上。",
+  "它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情地看着你。",
+  "博物学家：你好",
+  "博物学家：我是博物学家，你就是从现实来的客人吗？"
+ ];
+ const buttons=[];
+ if(pass?.id==="fox"||pass?.id==="lighthouse_jellyfish")buttons.push(["可能","naturalistKnown"]);
+ if(pass?.id!=="fox"&&pass?.id!=="lighthouse_jellyfish")buttons.push(["是的","naturalistYes"]);
+ survey.dialogDone=null;
+ startNaturalistPages(pages,buttons);
 }
+
 function naturalistKnown(){
- state="naturalist";
- show("博物学家：哦，我认识你，你是那位"+(pass?pass.name:"客人")+"！无论如何，谢谢你能来这里做客。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！这里的书都是我写的。\n\n博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧。",
- [["继续","naturalistEnd"]]);
+ const pages=[
+  "博物学家：哦，我认识你，你是那位"+(pass?pass.name:"客人")+"！无论如何，谢谢你能来这里做客。",
+  "博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！这里的书都是我写的。",
+  "博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧。"
+ ];
+ startNaturalistPages(pages,[["继续","naturalistEnd"]]);
 }
+
 function naturalistYes(){
- state="naturalist";
- show("博物学家：哦，真好，我终于见到现实的人们了。\n\n博物学家：这里都是为从现实来的客人专门写的书。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！如果你愿意，请读读看吧。",
- [["继续","naturalistEnd"]]);
+ const pages=[
+  "博物学家：哦，真好，我终于见到现实的人们了。",
+  "博物学家：这里都是为从现实来的客人专门写的书。",
+  "博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！如果你愿意，请读读看吧。"
+ ];
+ startNaturalistPages(pages,[["继续","naturalistEnd"]]);
 }
+
 function naturalistEnd(){
  DATA.variables.met_naturalist=1;saveData();
- state="naturalist";
- show("博物学家：我真想好好听听你的事。\n\n博物学家：毕竟对我来说，得知"+(pass?pass.name:"客人")+"的经历的机会，可是很难得的。\n\n博物学家：可惜，我还有重要的事情没有做。",
- [["再见","naturalistBack"]]);
+ const pages=[
+  "博物学家：我真想好好听听你的事。",
+  "博物学家：毕竟对我来说，得知"+(pass?pass.name:"客人")+"的经历的机会，可是很难得的。",
+  "博物学家：可惜，我还有重要的事情没有做。"
+ ];
+ startNaturalistPages(pages,[["再见","naturalistBack"]]);
 }
+
 function naturalistBack(){showSection(section);}
 
 function windowLeave(){showSection(section)}
@@ -919,7 +971,15 @@ function handle(raw){
  if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
  if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
  if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
- if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}
+ if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else naturalistBack();return}
+ if(state==="naturalistDialog"){
+  if(x==="naturalistKnown")naturalistKnown();
+  else if(x==="naturalistYes")naturalistYes();
+  else if(x==="naturalistEnd")naturalistEnd();
+  else if(x==="naturalistNext")naturalistNext();
+  else naturalistBack();
+  return;
+ }
  if(state==="naturalistAfter"){naturalistBack();return}
  if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
  if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
