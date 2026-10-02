@@ -27,13 +27,23 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
 <body>
 <main>
 <header>
+<div class="brand" id="brand">五彩滩图书馆</div>
+<div class="status" id="status"></div>
+</header>
+<div id="out"></div>
+<div class="controls">
+<div class="inputrow"><input id="cmd" autocomplete="off"><button id="send">输入</button></div>
+<div class="quick" id="quick"></div>
+</div>
+<script>
+const DEFAULT_DATA={
  title:"五彩滩图书馆",
  themeColor:"#82cdd0",
  variables:{met_naturalist:0},
  backgroundImage:"https://www.publicdomainpictures.net/pictures/470000/nahled/altes-papier-pergament-hintergrund-16602085209L8.jpg",
  display:{
   typewriter:{
-   entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,naturalist:true,
+   entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
    surveyChoice:true,surveyResult:true,book:true,library:false,scene:true,windowIntro:true,windowNear:true,windowDetail:true,
    admin:false,adminHomepage:false,adminStory:false,adminPass:false,adminSection:false,
    adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false,adminBackground:false
@@ -51,7 +61,7 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
   {id:"lighthouse_jellyfish",code:"真心",name:"灯塔水母",admin:true}
  ],
  sections:[
-  {id:"section_a",name:"A区",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
+  {id:"section_a",name:"“现实”",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
    {id:"book_tide",shelf:"a_window",name:"所有故事的故事",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],pages:[
     {text:"第一页：所有故事的开始。",image:"",caption:""},
     {text:"第二页：所有故事的结局。",image:"",caption:""}
@@ -60,7 +70,7 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
     {text:"这一页只对狐狸开放。",image:"",caption:""}
    ]}
   ]},
-  {id:"section_b",name:"B区",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
+  {id:"section_b",name:"故事区域",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[
    {id:"book_admin",shelf:"b_narrow",name:"未命名档案",description:"",visibleTo:["lighthouse_jellyfish"],pages:[
     {text:"这是管理员专用示例书。",image:"",caption:""}
    ]},
@@ -108,7 +118,10 @@ header{padding:8px 0 16px;border-bottom:1px solid rgba(238,220,190,.28);margin-b
 };
 
 let DATA=loadData();
-if(!DATA.variables)DATA.variables={};\nif(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;\nif(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});\n
+if(!DATA.variables)DATA.variables={};
+if(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;
+if(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});
+
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
 DATA.sections.forEach(sec=>{if(!Array.isArray(sec.visibleTo))sec.visibleTo=DATA.passes.map(p=>p.id)});
@@ -180,8 +193,8 @@ function renderWithTypewriter(text,btns=[]){
 }
 
 function setStatus(){
- brand.textContent=DATA.title;
- status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
+ if(brand)brand.textContent=DATA.title;
+ if(status)status.textContent=pass?("现实入口 · "+pass.name):"现实入口 · 未确认身份";
  applyThemeColor();
  applyBackgroundImage();
 }
@@ -210,7 +223,10 @@ function buttons(items){
   quick.appendChild(b);
  });
 }
-function show(s,btns=[]){renderWithTypewriter(s,btns);}
+function show(s,btns=[]){
+ const text = String(s ?? "");
+ renderWithTypewriter(text,btns);
+}
 function submit(){handle(cmd.value);cmd.value="";}
 document.getElementById("send").onclick=submit;
 cmd.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(typingActive){finishTyping();return}submit()}});
@@ -295,7 +311,7 @@ function authenticate(code){
  const p=DATA.passes.find(p=>p.code===code);
  if(!p){state="verifyFail";show("海：非常遗憾……\n\n这串密文没有效果。\n\n[B] 返回",[["返回","backEntrance"]]);return}
  pass=p;try{localStorage.setItem("wucaitan_v04_pass",p.id)}catch(e){}setStatus();state="afterAuth";
- show("海：你好，+p.name+。\n海：请进。",[["进入图书馆","libraryEnter"]]);
+ show("海：你好，"+p.name+"。\n海：请进。",[["进入图书馆","libraryEnter"]]);
 }
 function canSee(item){return !!pass?.admin || !Array.isArray(item?.visibleTo) || item.visibleTo.includes(pass?.id)}
 function visibleSections(){return DATA.sections.filter(canSee)}
@@ -343,69 +359,43 @@ function visibleShelfBooks(sh){
 }
 function openScenePoint(id){
  const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
- if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}\n if(pt.type==="naturalistTable"){openNaturalist();return}
+ if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
+ if(pt.type==="naturalistTable"){openNaturalist();return}
  showSection(section);
 }
 
-function naturalistShowLines(lines,stage){
- survey.dialogLines=lines||[];survey.dialogIndex=0;survey.naturalistStage=stage||"intro";state="naturalist";showNaturalistLine();
-}
-function showNaturalistLine(){
- const lines=survey.dialogLines||[],i=survey.dialogIndex||0;
- if(i>=lines.length){naturalistAdvance();return}
- show(lines[i],[[i<lines.length-1?"继续":(survey.naturalistStage==="intro"?"选择":survey.naturalistStage==="common"?"再见":"继续"),"naturalistNext"]]);
-}
-function naturalistNext(){
- const lines=survey.dialogLines||[],i=survey.dialogIndex||0;
- if(i<lines.length-1){survey.dialogIndex++;showNaturalistLine();return}
- naturalistAdvance();
-}
-function naturalistAdvance(){
- if(survey.naturalistStage==="intro"){
-  const id=pass?.id||"";
-  if(id==="fox"||id==="lighthouse_jellyfish")buttons([["可能","naturalistKnown"]]);
-  else buttons([["是的","naturalistYes"]]);
-  return;
- }
- if(survey.naturalistStage==="known"||survey.naturalistStage==="yes"){
-  naturalistShowLines([
-   "博物学家：我真想好好听听你的事",
-   "博物学家：毕竟对我来说，得知"+(pass?pass.name:"客人")+"的经历的机会，可是很难得的",
-   "博物学家：可惜，我还有重要的事情没有做"
-  ],"common");
-  return;
- }
- if(survey.naturalistStage==="common"){
-  DATA.variables.met_naturalist=1;saveData();survey.naturalistStage="";showSection(section);
- }
-}
 function openNaturalist(){
- if(DATA.variables.met_naturalist===1){state="naturalistAfter";show("博物学家：有什么事吗？",[["再见","naturalistBack"]]);return}
- state="naturalist";show("桌子上堆着许多书",[["走近","naturalistNear"]]);
+ if(DATA.variables.met_naturalist===1){
+  state="naturalistAfter";
+  show("博物学家：有什么事吗？",[["再见","naturalistBack"]]);
+  return;
+ }
+ state="naturalist";
+ show("桌子上堆着许多书",[["走近","naturalistNear"]]);
 }
 function openNaturalistNear(){
- naturalistShowLines([
-  "走近一看，一只兔子正坐在书堆后的椅子上。",
-  "它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情地看着你。",
-  "博物学家：你好",
-  "博物学家：我是博物学家，你就是从现实来的客人吗？"
- ],"intro");
+ state="naturalist";
+ show("走近一看，一只兔子正坐在书堆后的椅子上。\n它穿着有许多口袋的大衣，透过奇怪的眼镜，有些热情地看着你。\n\n博物学家：你好\n博物学家：我是博物学家，你就是从现实来的客人吗？",
+ [["可能","naturalistKnown"],["是的","naturalistYes"]]);
 }
 function naturalistKnown(){
- naturalistShowLines([
-  "博物学家：哦，我认识你，你是那位"+(pass?pass.name:"客人")+"！无论如何，谢谢你能来这里做客",
-  "博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！这里的书都是我写的",
-  "博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧"
- ],"known");
+ state="naturalist";
+ show("博物学家：哦，我认识你，你是那位"+(pass?pass.name:"客人")+"！无论如何，谢谢你能来这里做客。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！这里的书都是我写的。\n\n博物学家：虽然都是为从现实来的客人专门写的书，但是请你也读读看吧。",
+ [["继续","naturalistEnd"]]);
 }
 function naturalistYes(){
- naturalistShowLines([
-  "博物学家：哦，真好，我终于见到现实的人们了",
-  "博物学家：这里都是为从现实来的客人专门写的书。",
-  "博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！如果你愿意，请读读看吧。"
- ],"yes");
+ state="naturalist";
+ show("博物学家：哦，真好，我终于见到现实的人们了。\n\n博物学家：这里都是为从现实来的客人专门写的书。\n\n博物学家：为了理解现实人们的视角，我花了好多时间……不过终于完成了一些！如果你愿意，请读读看吧。",
+ [["继续","naturalistEnd"]]);
 }
-function naturalistBack(){showSection(section)}
+function naturalistEnd(){
+ DATA.variables.met_naturalist=1;saveData();
+ state="naturalist";
+ show("博物学家：我真想好好听听你的事。\n\n博物学家：毕竟对我来说，得知"+(pass?pass.name:"客人")+"的经历的机会，可是很难得的。\n\n博物学家：可惜，我还有重要的事情没有做。",
+ [["再见","naturalistBack"]]);
+}
+function naturalistBack(){showSection(section);}
+
 function windowLeave(){showSection(section)}
 function windowNear(){state="windowNear";show("就像现实，远处林立着形形色色的楼",[["离开","windowLeave"],["细看","windowDetail"]])}
 function windowDetail(){
@@ -929,7 +919,9 @@ function handle(raw){
  if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
  if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
  if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
- if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}\n if(state==="naturalistAfter"){naturalistBack();return}\n if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
+ if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else if(x==="naturalistKnown")naturalistKnown();else if(x==="naturalistYes")naturalistYes();else if(x==="naturalistEnd")naturalistEnd();else naturalistBack();return}
+ if(state==="naturalistAfter"){naturalistBack();return}
+ if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
  if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
  if(state==="placeholder"){if(x==="placeholderNext")placeholderNext();else if(x==="placeholderDone")placeholderDone();else showPlaceholderLine();return}
  if(state==="surveyResult"){
@@ -955,12 +947,18 @@ function handle(raw){
 // 稳定启动：不恢复上一次页面状态，始终从入口开始
 function stableBoot(){
  stopTyping();
+ pass=null;
+ section=null;
+ book=null;
+ page=0;
  state="entrance";
- startStory();
+ if(typeof startStory==="function"){
+  startStory();
+ }else if(typeof show==="function"){
+  show("----------图书馆入口-----------\n海：欢迎\n这里是五彩滩图书馆的现实入口");
+ }
 }
 
 stableBoot();
 </script>
-
-
-</body></html>
+</main></body></html>
