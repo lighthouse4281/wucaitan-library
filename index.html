@@ -45,7 +45,7 @@ const DEFAULT_DATA={
   typewriter:{
    entrance:false,story:true,intro:true,seaDialog:true,shelfVN:true,placeholder:true,
    surveyChoice:true,surveyResult:true,book:true,library:false,scene:false,windowIntro:true,windowNear:true,windowDetail:true,
-   naturalist:false,naturalistDialog:true,
+   naturalist:false,naturalistDialog:true,showcaseText:true,
    admin:false,adminHomepage:false,adminStory:false,adminPass:false,adminSection:false,
    adminBook:false,adminPageSelect:false,adminPage:false,adminVisibility:false,adminData:false,adminTheme:false,adminBackground:false
   }
@@ -80,7 +80,7 @@ const DEFAULT_DATA={
     {text:"第二天，狐狸收拾乐谱盒的时候，竟然在里面发现了一封信，上面边着的邮票歪歪扭扭，反面清楚写着“狐狸收”。狐狸拆开信，上面写着：\n亲爱的狐狸先生，\n您的三明治非常美味，谢谢您的慷慨。下一次，希望您能来加入我们的野餐。请不要忘记带上自己的餐具来。\n燕子\n致上\n\n一开始，狐狸一点儿也不相信。这怪不得我们的狐狸，毕竟坏孩子已经这样捉弄过它太多次了。那天它还是像以前一样，坐到公园树旁的长椅上。这一次，它把三明治放进了树洞里，头也不回地走了。结果第三天，它又在乐器盒里找到一封信，上面写着：\n亲爱的小狐狸\n谢谢你的三明治，但是它对我来说太大了。分享是很好的美德，春天也是野餐的好季节，希望你能认真考虑一下。\n松鼠 致上\n\n这下子，狐狸再也忍不住了。第四天，它整天守在自己的乐器盒边。到了中午，仍然没有坏孩子或是小动物拿着一封信出现。狐狸终于是没下心来，这一次，它决定尝一尝自己的三明治。\n就在它打开午餐盒的时候，两只飞快的鸟儿飞来，突然抓着它的乐器盒飞走了。狐狸立马追了上去，它越过公园的矮墙，跑到了深深的树林里。春天的森林里树影重重，树叶已经长得厚厚得了，一会儿过去，狐狸不但跟丢了鸟儿，还连路也找不到了。狐狸当然很着急，它在树林里走啊走，不知道怎样才能出去。它急得马上就要哭出来了。\n就在这个时候，一个奇妙的声音突然叫住它：\n“你在这儿！还有很多信是给你的呢……”\n狐狸就这样认识了邮差。",image:"",caption:""}
    ]}
   ]},
-  {id:"section_c",name:"C区",description:"",visibleTo:["lighthouse_jellyfish"],books:[]},
+  {id:"section_c",name:"长廊",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[]},
   {id:"section_d",name:"D区",description:"",visibleTo:["lighthouse_jellyfish"],books:[]}
  ],
  shelves:{
@@ -121,7 +121,16 @@ const DEFAULT_DATA={
 let DATA=loadData();
 if(!DATA.variables)DATA.variables={};
 if(DATA.variables.met_naturalist==null)DATA.variables.met_naturalist=0;
-if(!DATA.scenePoints.section_a.some(p=>p.id==="naturalist_table"))DATA.scenePoints.section_a.push({id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:DATA.passes.map(p=>p.id)});
+
+// 长廊：兼容旧数据。C区改名为“长廊”，并向所有通行证用户开放。
+const corridorPasses=DATA.passes.map(p=>p.id);
+const corridorSection=DATA.sections.find(x=>x.id==="section_c");
+if(corridorSection){
+ corridorSection.name="长廊";
+ corridorSection.visibleTo=corridorPasses.slice();
+}else{
+ DATA.sections.push({id:"section_c",name:"长廊",description:"",visibleTo:corridorPasses.slice(),books:[]});
+}
 
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
@@ -135,6 +144,24 @@ const currentStorySection=DATA.sections.find(x=>x.id==="section_b");
 if(picnicDefault&&currentStorySection&&!currentStorySection.books.some(x=>x.id==="book_picnic")){currentStorySection.books.push(clone(picnicDefault));}
 if(!DATA.scenePoints.section_a)DATA.scenePoints.section_a=clone(DEFAULT_DATA.scenePoints.section_a);
 if(!DATA.scenePoints.section_b)DATA.scenePoints.section_b=clone(DEFAULT_DATA.scenePoints.section_b);
+if(!DATA.scenePoints.section_c)DATA.scenePoints.section_c=[];
+
+// 长廊的五个展示柜。内容暂时全部使用占位文本，后续可逐个替换。
+const corridorShowcases=[
+ {id:"showcase_1",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"放着一个奇怪的金色眼镜\n\n上面的装饰让你倍感奇异"},
+ {id:"showcase_2",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"一只白色的猫的毛毡，挂在玻璃顶下\n\n"},
+ {id:"showcase_3",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"一条橡皮擦，躺在布的正中央\n\n绿色的包装缠满了胶带，虽然很陈旧，却非常完好\n\n“对不起”柜子上这么写着"},
+ {id:"showcase_4",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"柜子里是空的\n\n你隐约感觉，里面曾经放着非常重要的东西"},
+ {id:"showcase_5",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"造型古怪的小小瓷壶\n\n这是用来做什么的？"},
+ {id:"showcase_6",name:"展示柜",type:"showcase",visibleTo:corridorPasses.slice(),text:"有横线的纸，散散堆在展柜内部\n\n里面有许多显然来自不同的笔记本，也有很多写了一些东西，但是看不清上面的内容"},
+ {id:"notice_board",name:"告示牌",type:"showcase",visibleTo:corridorPasses.slice(),text:"总有一天，我会忘记"}
+];
+const oldShowcases=DATA.scenePoints.section_c.filter(p=>p.type==="showcase");
+if(oldShowcases.length<5){
+ const existingIds=new Set(DATA.scenePoints.section_c.map(p=>p.id));
+ corridorShowcases.forEach(pt=>{if(!existingIds.has(pt.id))DATA.scenePoints.section_c.push(clone(pt));});
+}
+DATA.scenePoints.section_c.forEach(pt=>{if(pt.type==="showcase")pt.visibleTo=corridorPasses.slice()});
 if(!DATA.shelfDialogues)DATA.shelfDialogues=clone(DEFAULT_DATA.shelfDialogues);
 if(!DATA.backgroundImage)DATA.backgroundImage=DEFAULT_DATA.backgroundImage||"";
 if(!DATA.display)DATA.display=clone(DEFAULT_DATA.display);
@@ -186,11 +213,12 @@ function renderWithTypewriter(text,btns=[]){
  typingTarget=normalizeDisplayText(text);typingButtons=btns||[];
  if(!typewriterEnabled()){render(typingTarget);buttons(typingButtons);return}
  typingActive=true;typingIndex=0;render("");
+ const delay=state==="showcaseText"?110:Math.max(45,Math.min(90,1200/Math.max(typingTarget.length,1)));
  typingTimer=setInterval(()=>{
   typingIndex++;
   render(typingTarget.slice(0,typingIndex));
   if(typingIndex>=typingTarget.length)finishTyping();
- },Math.max(45,Math.min(90,1200/Math.max(typingTarget.length,1))));
+ },delay);
 }
 
 function setStatus(){
@@ -362,8 +390,22 @@ function openScenePoint(id){
  const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
  if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
  if(pt.type==="naturalistTable"){openNaturalist();return}
+ if(pt.type==="showcase"){openShowcase(pt);return}
  showSection(section);
 }
+
+function openShowcase(pt){
+ state="showcaseText";
+ let text=pt.text||"";
+ if(pt.id==="showcase_2"){
+  text="一只白色的猫的毛毡，挂在玻璃顶下\n\n";
+  if(pass?.id==="fox"||pass?.id==="lighthouse_jellyfish")text+="你认得它，它也认得你";
+  else text+="有些熟悉，但是它并不是你所想的那只猫";
+ }
+ if(pt.id==="notice_board")text="“总有一天，我会忘记”";
+ show(text,[["返回长廊","showcaseBack"]]);
+}
+function showcaseBack(){showSection(section)}
 
 function openNaturalist(){
  if(DATA.variables.met_naturalist===1){
@@ -590,7 +632,7 @@ function adminBackgroundChoice(x){
 function adminTypewriter(){
  state="adminTypewriter";
  const m=DATA.display?.typewriter||{};
- const labels={entrance:"入口",story:"剧情",intro:"旧式引入",seaDialog:"海的对话",shelfVN:"书架调查·人物对话",placeholder:"占位书对话",surveyChoice:"调查选择",surveyResult:"调查结果",book:"书页",library:"图书馆主页",scene:"分区场景",windowIntro:"窗·初见",windowNear:"窗·近看",windowDetail:"窗·细看",admin:"编辑室",adminHomepage:"主页编辑",adminStory:"剧情编辑",adminPass:"通行证编辑",adminSection:"分区编辑",adminBook:"书目编辑",adminPageSelect:"书页选择",adminPage:"书页编辑",adminVisibility:"权限编辑",adminData:"数据页",adminTheme:"主题颜色页",adminBackground:"背景图片页"};
+ const labels={entrance:"入口",story:"剧情",intro:"旧式引入",seaDialog:"海的对话",shelfVN:"书架调查·人物对话",placeholder:"占位书对话",surveyChoice:"调查选择",surveyResult:"调查结果",book:"书页",library:"图书馆主页",scene:"分区场景",windowIntro:"窗·初见",windowNear:"窗·近看",windowDetail:"窗·细看",admin:"编辑室",adminHomepage:"主页编辑",adminStory:"剧情编辑",adminPass:"通行证编辑",adminSection:"分区编辑",adminBook:"书目编辑",adminPageSelect:"书页选择",adminPage:"书页编辑",adminVisibility:"权限编辑",adminData:"数据页",adminTheme:"主题颜色页",adminBackground:"背景图片页",showcaseText:"长廊展示柜"};
  let s="========== 文字显示 ==========\n\n";
  Object.keys(labels).forEach((k,i)=>s+="["+(i+1)+"] "+labels[k]+"："+(m[k]===true?"开":"关")+"\n");
  s+="\n修改：set=页面状态|on/off\n例如：set=shelfVN|on\n也可以：set=seaDialog|off\n\n[B] 返回编辑室";
@@ -981,6 +1023,7 @@ function handle(raw){
   return;
  }
  if(state==="naturalistAfter"){naturalistBack();return}
+ if(state==="showcaseText"){showcaseBack();return}
  if(state==="shelfVN"){if(x==="shelfNext")shelfNext();else showShelfLine();return}
  if(state==="surveyChoice"){if(x==="doSurvey")doSurvey();else leaveShelf();return}
  if(state==="placeholder"){if(x==="placeholderNext")placeholderNext();else if(x==="placeholderDone")placeholderDone();else showPlaceholderLine();return}
