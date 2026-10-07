@@ -81,6 +81,7 @@ const DEFAULT_DATA={
    ]}
   ]},
   {id:"section_c",name:"长廊",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[]},
+  {id:"section_corner_door",name:"转角的门",description:"",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"],books:[]},
   {id:"section_d",name:"D区",description:"",visibleTo:["lighthouse_jellyfish"],books:[]}
  ],
  shelves:{
@@ -103,7 +104,8 @@ const DEFAULT_DATA={
  }, 
  scenePoints:{
   section_a:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},{id:"naturalist_table",name:"窗边的桌子",type:"naturalistTable",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}],
-  section_b:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}]
+  section_b:[{id:"window",name:"窗",type:"window",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}],
+  section_corner_door:[{id:"corner_phone",name:"电话",type:"cornerPhone",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]},{id:"corner_stairs",name:"楼梯",type:"cornerStairs",visibleTo:["friend_jellyfish","fox","lighthouse_jellyfish"]}]
  },
  story:{
   start:"start",
@@ -132,6 +134,16 @@ if(corridorSection){
  DATA.sections.push({id:"section_c",name:"长廊",description:"",visibleTo:corridorPasses.slice(),books:[]});
 }
 
+const cornerDoorPasses=corridorPasses.slice();
+let cornerDoorSection=DATA.sections.find(x=>x.id==="section_corner_door");
+if(!cornerDoorSection){
+ cornerDoorSection={id:"section_corner_door",name:"转角的门",description:"",visibleTo:cornerDoorPasses.slice(),books:[]};
+ DATA.sections.push(cornerDoorSection);
+}else{
+ cornerDoorSection.name="转角的门";
+ cornerDoorSection.visibleTo=cornerDoorPasses.slice();
+}
+
 if(!DATA.shelves)DATA.shelves=clone(DEFAULT_DATA.shelves);
 Object.keys(DEFAULT_DATA.shelves).forEach(k=>{if(!DATA.shelves[k])DATA.shelves[k]=clone(DEFAULT_DATA.shelves[k]);DATA.shelves[k].forEach(sh=>{if(!Array.isArray(sh.visibleTo))sh.visibleTo=DATA.passes.map(p=>p.id)})});
 DATA.sections.forEach(sec=>{if(!Array.isArray(sec.visibleTo))sec.visibleTo=DATA.passes.map(p=>p.id)});
@@ -145,6 +157,11 @@ if(picnicDefault&&currentStorySection&&!currentStorySection.books.some(x=>x.id==
 if(!DATA.scenePoints.section_a)DATA.scenePoints.section_a=clone(DEFAULT_DATA.scenePoints.section_a);
 if(!DATA.scenePoints.section_b)DATA.scenePoints.section_b=clone(DEFAULT_DATA.scenePoints.section_b);
 if(!DATA.scenePoints.section_c)DATA.scenePoints.section_c=[];
+if(!DATA.scenePoints.section_corner_door)DATA.scenePoints.section_corner_door=[];
+const cornerDoorPoints=[{id:"corner_phone",name:"电话",type:"cornerPhone",visibleTo:cornerDoorPasses.slice()},{id:"corner_stairs",name:"楼梯",type:"cornerStairs",visibleTo:cornerDoorPasses.slice()}];
+const existingCornerIds=new Set(DATA.scenePoints.section_corner_door.map(p=>p.id));
+cornerDoorPoints.forEach(pt=>{if(!existingCornerIds.has(pt.id))DATA.scenePoints.section_corner_door.push(clone(pt));});
+DATA.scenePoints.section_corner_door.forEach(pt=>pt.visibleTo=cornerDoorPasses.slice());
 
 // 长廊的五个展示柜。内容暂时全部使用占位文本，后续可逐个替换。
 const corridorShowcases=[
@@ -166,6 +183,7 @@ if(!DATA.shelfDialogues)DATA.shelfDialogues=clone(DEFAULT_DATA.shelfDialogues);
 if(!DATA.backgroundImage)DATA.backgroundImage=DEFAULT_DATA.backgroundImage||"";
 if(!DATA.display)DATA.display=clone(DEFAULT_DATA.display);
 if(!DATA.display.typewriter)DATA.display.typewriter=clone(DEFAULT_DATA.display.typewriter);
+DATA.display.typewriter.cornerPhoneIntro=true;DATA.display.typewriter.cornerPhoneDialog=true;DATA.display.typewriter.cornerStairs=true;
 Object.keys(DEFAULT_DATA.display.typewriter).forEach(k=>{if(typeof DATA.display.typewriter[k]!=="boolean")DATA.display.typewriter[k]=DEFAULT_DATA.display.typewriter[k]});
 let state="entrance", currentNode=DATA.story.start, pass=null, section=null, book=null, page=0, edit={}, survey={shelf:null,attempts:{},dialogLines:[],dialogIndex:0,results:[],resultIndex:0,foundByShelf:{}};
 try{const savedPassId=localStorage.getItem("wucaitan_v04_pass");if(savedPassId){pass=DATA.passes.find(p=>p.id===savedPassId)||null}}catch(e){}
@@ -390,9 +408,32 @@ function openScenePoint(id){
  const pt=visiblePoints(section).find(x=>x.id===id);if(!pt){showSection(section);return}
  if(pt.type==="window"){state="windowIntro";show("广阔的落地窗",[["离开","windowLeave"],["近看","windowNear"]]);return}
  if(pt.type==="naturalistTable"){openNaturalist();return}
+ if(pt.type==="cornerPhone"){openCornerPhone();return}
+ if(pt.type==="cornerStairs"){openCornerStairs();return}
  if(pt.type==="showcase"){openShowcase(pt);return}
  showSection(section);
 }
+
+function openCornerPhone(){
+ state="cornerPhoneIntro";
+ show("一台电话机，放在角落的桌子上，轮盘上面没有任何数字\n\n牌子上写着“幽灵电话”，要拿起话筒吗",[["喂？","cornerPhoneAnswer"]]);
+}
+function openCornerPhoneRandom(){
+ const n=Math.floor(Math.random()*4)+1;state="cornerPhoneDialog";
+ if(n===1){survey.cornerPhonePages=["………\n……\n…抱歉\n………月球背面……寒冷期…\n请……打过来…吗？","……\n\n电话挂断了"];survey.cornerPhoneButtons=["cornerPhoneEnd"];
+ }else if(n===2){survey.cornerPhonePages=["您好！需要订购鱼披萨服务吗？现在正在举办鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼特惠，一个鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼披萨的价格是鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼鱼…","你挂断了电话"];survey.cornerPhoneButtons=["cornerPhoneEnd"];
+ }else if(n===3){survey.cornerPhonePages=["滋滋--","似乎是无人接听","仔细一听，是电视发出的声音"];survey.cornerPhoneButtons=["cornerPhoneEnd"];
+ }else{survey.cornerPhonePages=["……\n………有什么事吗？\n\n电话那头传来一个沉闷的女声，混杂着咕噜噜的声音"];survey.cornerPhoneButtons=["cornerPhoneWho"];}
+ survey.cornerPhoneIndex=0;showCornerPhonePage();
+}
+function showCornerPhonePage(){const pages=survey.cornerPhonePages||[],i=survey.cornerPhoneIndex||0;const isLast=i===pages.length-1;let btns;if(isLast){btns=survey.cornerPhoneButtons?.[0]==="cornerPhoneWho"?[["你是谁？","cornerPhoneWho"]]:[["下一页","cornerPhoneEnd"]];}else btns=[["下一页","cornerPhoneNext"]];show(pages[i]||"",btns);}
+function cornerPhoneNext(){survey.cornerPhoneIndex=(survey.cornerPhoneIndex||0)+1;showCornerPhonePage();}
+function cornerPhoneWho(){survey.cornerPhonePages=["……\n………在窗帘…\n\n只剩下水一般的声音"];survey.cornerPhoneIndex=0;survey.cornerPhoneButtons=["cornerPhoneEnd"];showCornerPhonePage();}
+function cornerPhoneAnswer(){openCornerPhoneRandom()}
+function cornerPhoneEnd(){showSection(section)}
+function openCornerStairs(){state="cornerStairs";show("木制的四方螺旋楼梯，看起来会吱吱叫",[["向上走","cornerStairsMove"],["向下走","cornerStairsMove"],["离开","cornerStairsLeave"]]);}
+function cornerStairsMove(){show("似乎什么都没有发生改变",[["向上走","cornerStairsMove"],["向下走","cornerStairsMove"],["离开","cornerStairsLeave"]]);}
+function cornerStairsLeave(){showSection(section);}
 
 function openShowcase(pt){
  state="showcaseText";
@@ -1013,6 +1054,9 @@ function handle(raw){
  if(state==="windowIntro"){if(x==="windowLeave")windowLeave();else if(x==="windowNear")windowNear();else startWindowInteraction();return}
  if(state==="windowNear"){if(x==="windowLeave")windowLeave();else if(x==="windowDetail")windowDetail();else windowNear();return}
  if(state==="windowDetail"){if(x.toUpperCase()==="B")windowLeave();else windowDetail();return}
+ if(state==="cornerPhoneIntro"){if(x==="cornerPhoneAnswer")cornerPhoneAnswer();else openCornerPhone();return}
+ if(state==="cornerPhoneDialog"){if(x==="cornerPhoneNext")cornerPhoneNext();else if(x==="cornerPhoneWho")cornerPhoneWho();else if(x==="cornerPhoneEnd")cornerPhoneEnd();else cornerPhoneEnd();return}
+ if(state==="cornerStairs"){if(x==="cornerStairsMove")cornerStairsMove();else openCornerStairs();return}
  if(state==="naturalist"){if(x==="naturalistNear")openNaturalistNear();else naturalistBack();return}
  if(state==="naturalistDialog"){
   if(x==="naturalistKnown")naturalistKnown();
